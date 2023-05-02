@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "FaceBlocker 2",
+  "version": "1.0",
+  "description": "Estensione per bloccare le pubblicità contenenti personaggi indesiderati",
+  "icons": {
+    "16": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
+  },
+  "action": {
+    "default_icon": "icon.png",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "all_frames": true,
+      "js": [
+        "node_modules/@vladmandic/face-api/dist/face-api.js",
+        "popup.js"
+      ],
+      "match_about_blank": true,
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "run_at": "document_end"
+    }
+  ]
+}
