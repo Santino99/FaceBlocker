@@ -1,20 +1,16 @@
-class DistanceLayer extends faceapi.tf.layers.Layer {
-    constructor() {
-      super({});
-    }
+async function loadModels() {
+  await Promise.all([
+    faceapi.nets.ssdMobilenetv1.loadFromUri('node_modules/@vladmandic/face-api/model')
+  ]);
   
-    call(inputs) {
-      const [x1, x2] = inputs;
-      return faceapi.tf.abs(faceapi.tf.sub(x1, x2));
-    }
+  console.log('Modelli caricati con successo');
 }
 
 (async () => {
 
-  async function detectFace(result){
-    // await faceapi.nets.ssdMobilenetv1.loadFromUri(chrome.runtime.getURL('node_modules/@vladmandic/face-api/model'));
-    await faceapi.nets.ssdMobilenetv1.loadFromUri('node_modules/@vladmandic/face-api/model');
+  loadModels();
 
+  async function detectFace(result){
     const img = new Image();
     img.src = result;
     const detection = await faceapi.detectAllFaces(img);
@@ -29,11 +25,10 @@ class DistanceLayer extends faceapi.tf.layers.Layer {
       detection[0].box.width,
       detection[0].box.height,
       0, 0, 105, 105);
-
     return canvas;
   }
 
-  async function constructDivImage(readerResult, photo){
+  function constructDivImage(readerResult, photo){
     const preview = document.getElementsByClassName('preview')[0];
     
     const container = document.createElement('div')
@@ -101,7 +96,6 @@ class DistanceLayer extends faceapi.tf.layers.Layer {
 
   async function getImage(){
     const all = await chrome.storage.local.get();
-    console.log(Object.entries(all).length)
     for (const [key, val] of Object.entries(all)){
       constructDivImage(key, val);
       /* FARE CONTROLLO SE CARICO LA STESSA IMMAGINE, ALLORA NON PRENDERLA*/
@@ -199,7 +193,7 @@ class DistanceLayer extends faceapi.tf.layers.Layer {
         reader.readAsDataURL(file);
         reader.onload = () => {
           detectFace(reader.result).then((res) => {
-            const photo= res.toDataURL();
+            const photo = res.toDataURL();
             divImage = constructDivImage(reader.result, photo);
             chrome.storage.local.set({[reader.result]: photo});
           /*chrome.storage.local.clear(function() {
@@ -215,78 +209,6 @@ class DistanceLayer extends faceapi.tf.layers.Layer {
     });
 
     getImage();
-  });
-
-  chrome.runtime.onMessage.addListener(async function(request, sender, sendResponse) {
-    DistanceLayer.className = 'Lambda';
-    await faceapi.tf.serialization.registerClass(DistanceLayer);
-    await faceapi.nets.ssdMobilenetv1.loadFromUri(chrome.runtime.getURL('node_modules/@vladmandic/face-api/model'));
-    const model = await faceapi.tf.loadGraphModel(chrome.runtime.getURL('modeljs/model.json'));
-
-    const images = request.images;
-    //for (const image of images){
-      if(images[1] !== ""){
-        console.log(images[1]);
-        const img1 = new Image();
-        img1.src = images[1];
-        img1.crossOrigin = 'anonymous';
-
-        const detection = await faceapi.detectAllFaces(img1);
-        console.log(detection);
-        if(detection.length > 0){
-          const canvas = document.createElement('canvas');
-          const context = canvas.getContext('2d', {willReadFrequently: true});
-
-          canvas.width = 105;
-          canvas.height = 105;
-
-          context.drawImage(img1,
-            detection[0].box.x,
-            detection[0].box.y,
-            detection[0].box.width,
-            detection[0].box.height,
-            0, 0, 105, 105);
-
-        // chrome.storage.local.set({[canvas.toDataURL()]: canvas.toDataURL()});
-            //RISOLVERE URGENTE QUI
-          const all = chrome.storage.local.get();
-          
-          all.then(function(data){
-            for (const [key, val] of Object.entries(data)){ 
-              const canvas2 = document.createElement('canvas');
-              const context2 = canvas2.getContext('2d', {willReadFrequently: true});
-              const img2 = new Image();
-              img2.src = val;
-              canvas2.width = 105;
-              canvas2.height = 105;
-
-              context2.drawImage(img2, 0, 0, 105, 105);
-              
-              chrome.storage.local.set({[canvas2.toDataURL()]: canvas2.toDataURL()});
-
-              const imageData1 = context.getImageData(0, 0, 105, 105);
-              const tensor1 = faceapi.tf.browser.fromPixels(imageData1);
-              const normalizedTensor1 = tensor1.toFloat().div(255);
-              const batchedTensor1 = normalizedTensor1.expandDims();
-      
-              const imageData2 = context2.getImageData(0, 0, 105, 105);
-              const tensor2 = faceapi.tf.browser.fromPixels(imageData2);
-              const normalizedTensor2 = tensor2.toFloat().div(255);
-              const batchedTensor2 = normalizedTensor2.expandDims();
-              
-              predictions = model.predict([batchedTensor1, batchedTensor2]).data().then(results => {
-                console.log(results[0])
-                if(results[0]<0.5){
-                  console.log("Sono la stessa persona")
-                }
-                else{
-                  console.log("Non sono la stessa persona")
-                }
-              })
-            }
-        });
-      }
-    }
   });
 })();
 
