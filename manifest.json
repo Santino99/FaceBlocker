@@ -12,19 +12,40 @@
     "default_icon": "icon.png",
     "default_popup": "popup.html"
   },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "node_modules/@vladmandic/face-api/model/*", 
+        "modeljs/*"
+      ],
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ]
+    }
+  ],
   "content_scripts": [
     {
       "all_frames": true,
       "js": [
         "node_modules/@vladmandic/face-api/dist/face-api.js",
-        "popup.js"
+        "popup.js",
+        "content.js"
       ],
       "match_about_blank": true,
       "matches": [
-        "http://*/*",
-        "https://*/*"
+        "<all_urls>"
       ],
       "run_at": "document_end"
     }
-  ]
+  ],
+  "permissions": [
+    "storage",
+    "tabs",
+    "activeTab",
+    "scripting"
+  ],
+  "background":{
+    "service_worker": "background.js"
+  }
 }
