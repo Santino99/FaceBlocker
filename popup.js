@@ -178,7 +178,7 @@ async function loadModels() {
         reader.readAsDataURL(file);
         reader.onload = () => {
           detectFace(reader.result).then((res) => {
-            const photo= res.toDataURL();
+            const photo= res.toDataURL('image/jpeg');
             divImage = constructDivImage(reader.result, photo);
             chrome.storage.local.set({[reader.result]: photo});
           })
@@ -193,7 +193,7 @@ async function loadModels() {
         reader.readAsDataURL(file);
         reader.onload = () => {
           detectFace(reader.result).then((res) => {
-            const photo = res.toDataURL();
+            const photo = res.toDataURL('image/jpeg');
             divImage = constructDivImage(reader.result, photo);
             chrome.storage.local.set({[reader.result]: photo});
           /*chrome.storage.local.clear(function() {
