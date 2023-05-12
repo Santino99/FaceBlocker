@@ -62,14 +62,16 @@ async function loadData(){
                             img2.height = 105;
                             
                             const imageData1 = img1;
-                            //document.body.appendChild(imageData1);
+                            document.body.appendChild(imageData1);
                             const tensor1 = faceapi.tf.browser.fromPixels(imageData1);
+                            console.log(tensor1.dataSync());
                             const normalizedTensor1 = tensor1.cast("float32").div(faceapi.tf.scalar(255));
                             const batchedTensor1 = normalizedTensor1.expandDims(0, normalizedTensor1);
 
                             const imageData2 = img2
-                            //document.body.appendChild(imageData2);
+                            document.body.appendChild(imageData2);
                             const tensor2 = faceapi.tf.browser.fromPixels(imageData2);
+                            console.log(tensor2.dataSync());
                             const normalizedTensor2 = tensor2.cast("float32").div(faceapi.tf.scalar(255));
                             const batchedTensor2 = normalizedTensor2.expandDims(0, normalizedTensor2);
                             
