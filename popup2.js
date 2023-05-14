@@ -25,9 +25,7 @@ document.addEventListener('DOMContentLoaded', function() {
       reader.readAsDataURL(file);
       reader.onload = () => {
         detectFace(reader.result).then((res) => {
-          console.log("fuori")
           for(const r of res){
-            console.log("dentro")
             constructDivImage(r);
           }
         });
@@ -42,9 +40,7 @@ document.addEventListener('DOMContentLoaded', function() {
       reader.readAsDataURL(file);
       reader.onload = () => {
         detectFace(reader.result).then((res) => {
-          console.log("fuori")
           for(const r of res){
-            console.log("dentro")
             constructDivImage(r);
           }
         /*chrome.storage.local.clear(function() {
@@ -68,30 +64,28 @@ async function detectFace(result){
     img.src = result;
   });
   try {
-    const img = await imageLoadPromise;
-    const detections = await faceapi.detectAllFaces(img).withFaceLandmarks().withFaceDescriptors();
+    await imageLoadPromise.then(async (img) => {
+      const detections = await faceapi.detectAllFaces(img).withFaceLandmarks().withFaceDescriptors();
     
-    canvases = [];
-    console.log("caaaaaa")
-    for (const detection of detections){
-      console.log("amici miei")
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d', {willReadFrequently: true});
-      canvas.width = img.width;
-      canvas.height = img.height;
-      context.drawImage(img,
-        detection.detection.box.x,
-        detection.detection.box.y,
-        detection.detection.box.width,
-        detection.detection.box.height,
-        0, 0, img.width, img.height);
-      canvases.push(canvas.toDataURL('image/jpeg'));
+      canvases = [];
+      for (const detection of detections){
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d', {willReadFrequently: true});
+        canvas.width = img.width;
+        canvas.height = img.height;
+        context.drawImage(img,
+          detection.detection.box.x,
+          detection.detection.box.y,
+          detection.detection.box.width,
+          detection.detection.box.height,
+          0, 0, img.width, img.height);
+        canvases.push(canvas.toDataURL('image/jpeg'));
 
-      //console.log(detection)
-      await chrome.storage.local.set({[canvas.toDataURL('image/jpeg')]: JSON.stringify(detection)});
+        await chrome.storage.local.set({[canvas.toDataURL('image/jpeg')]: JSON.stringify(detection)});
 
-      canvas.remove();
-    }
+        canvas.remove();
+      }
+    })
   } catch (error) {
     console.error(error);
   }
@@ -162,28 +156,26 @@ function constructDivImage(photo){
   preview.appendChild(container);
 }
 
-(async () => {
-  
-  async function getImage(){
-    console.log("weee")
-    const all = await chrome.storage.local.get();
-    for (const [key, val] of Object.entries(all)){
-      if(key.startsWith('savedImage')){
-        detectFace(val).then((res) => {
-          for(const r of res){
-            constructDivImage(r);
-          }
-        });
-        chrome.storage.local.remove(key);
-        console.log(chrome.storage.local.get());
-      }
-      else{
-        constructDivImage(key);
-      }
-      /* FARE CONTROLLO SE CARICO LA STESSA IMMAGINE, ALLORA NON PRENDERLA*/
-    } 
-  }
+async function getImage(){
+  const all = await chrome.storage.local.get();
+  for (const [key, val] of Object.entries(all)){
+    if(key.startsWith('savedImage')){
+      detectFace(val).then((res) => {
+        for(const r of res){
+          constructDivImage(r);
+        }
+      });
+      chrome.storage.local.remove(key);
+      console.log(chrome.storage.local.get());
+    }
+    else{
+      constructDivImage(key);
+    }
+    /* FARE CONTROLLO SE CARICO LA STESSA IMMAGINE, ALLORA NON PRENDERLA*/
+  } 
+}
 
+(async () => {
   await loadModels();
-  getImage();
+  await getImage();
 })();

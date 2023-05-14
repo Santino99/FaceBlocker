@@ -3,6 +3,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     chrome.storage.local.get().then(sendResponse);
     return true;
   }
+  else if(message === 'getSavedModels'){
+    sendResponse(faceapiCache.models);
+    return true;
+    //console.log(message.img1);
+  }
 });
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -21,6 +26,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     countSavedImages++;
   }
 })
+
 /*
 chrome.contextMenus.onClicked.addListener((info) => {
   console.log("Example action")
