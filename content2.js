@@ -31,7 +31,7 @@ async function startBlocking(all, image){
               //console.log(img1);
               for (const [key, val] of Object.entries(all)){ 
                 if(!key.startsWith('savedImage')){
-                  descriptor2 = new Float32Array(Object.values(JSON.parse(val).descriptor));
+                  descriptor2 = new Float32Array(Object.values(JSON.parse(val)));
                   const distance = await faceapi.euclideanDistance(detection.descriptor, descriptor2);
                   if(distance <= 0.6){
                       await obscure(image)
@@ -55,11 +55,10 @@ async function startBlocking(all, image){
 
 let savedImages;
 
-//DARE IL TEMPO ALLE IMMAGINI DI CARICARSI BENE NEL POPUP
 //FARE CARTELLE PER I VOLTI
 // AGGIUNGERE OPZIONE DI SELEZIONE DI VOLTI CHE VOGLIO RILEVARE
+// VEDERE PER IL CONTEXT
 chrome.runtime.sendMessage('getSavedImages', (response) => {
-
   savedImages = response;
   loadModels().then(function(){
     foundedImages = document.querySelectorAll('img');

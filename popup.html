@@ -8,7 +8,21 @@
     <div id="title">
       <h4>FaceBlocker</h4>
     </div>
-    <div id="drop-area">
+    <div class="container">
+      <div class="row justify-content-around" id="button-area">
+        <div class="col-4" id="add-button">
+          <button type="button" class="btn btn-success">Aggiungi cartella</button>
+        </div>
+        <div class="col-4" id="remove-button">
+          <button type="button" class="btn btn-danger">Rimuovi cartella</button>
+        </div>
+        <div class="col-4" id="modified-button">
+          <button type="button" class="btn btn-warning">Rinomina cartella</button>
+        </div>
+      </div>
+    </div>
+    <hr>
+   <!--<div id="drop-area">
       <div class="drop-zone">
         <span class="icon">
           <i class="fa-solid fa-file-arrow-up"></i>
@@ -16,6 +30,16 @@
         <span class="text">Trascina qui le tue immagini o clicca per selezionarle. I volti rilevati verranno visualizzati sotto</span>
         <input id="fileElem" type="file" accept="image/*" multiple>
       </div>
+    </div>-->
+    <div class="preview">
+      <!--<div class="card" style="width: 150px">
+        <img class="card-img-top" src="folder.png">
+        <div class="card-body">
+          <input type="text" style="width: 120px" placeholder="Scegli un nome">
+          <hr>
+          <a href="#" class="btn btn-primary">Rileva</a>
+        </div>
+      </div>-->
     </div>
     <div class="preview"></div>
 

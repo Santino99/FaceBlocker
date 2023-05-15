@@ -3,12 +3,42 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     chrome.storage.local.get().then(sendResponse);
     return true;
   }
-  else if(message === 'getSavedModels'){
-    sendResponse(faceapiCache.models);
+  else if(message === 'existingImage'){
+    chrome.notifications.create({
+      type: "basic",
+      title: "Avviso",
+      message: "Quest'immagine è già stata aggiunta",
+      iconUrl: chrome.runtime.getURL('icon.png'),
+    });
     return true;
-    //console.log(message.img1);
+  }
+  else if(message === 'addedImage'){
+    chrome.notifications.create({
+      type: "basic",
+      title: "Avviso",
+      message: "Immagine aggiunta correttamente",
+      iconUrl: chrome.runtime.getURL('icon.png'),
+    });
+    return true;
   }
 });
+
+let countSavedImages = 0;
+
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+  if(info.menuItemId === 'Take image'){
+    //await chrome.storage.local.set({['savedImage'+countSavedImages]: info.srcUrl});
+    chrome.runtime.sendMessage('savedImage'+countSavedImages)
+    countSavedImages++;
+    /*chrome.notifications.create({
+      type: "basic",
+      title: "Avviso",
+      message: "Immagine aggiunta correttamente",
+      iconUrl: chrome.runtime.getURL('icon.png'),
+    });*/
+    return true;
+  }
+})
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
@@ -18,26 +48,19 @@ chrome.runtime.onInstalled.addListener(() => {
   });
 });
 
-let countSavedImages = 0;
-
-chrome.contextMenus.onClicked.addListener((info, tab) => {
-  if(info.menuItemId === 'Take image'){
-    chrome.storage.local.set({['savedImage'+countSavedImages]: info.srcUrl});
-    countSavedImages++;
-  }
-})
-
-/*
-chrome.contextMenus.onClicked.addListener((info) => {
-  console.log("Example action")
-});*/
-//if (request.message === "Hello from content.js!") {
-    // chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-      // chrome.tabs.sendMessage(tabs[0].id, {images: request.images});
-    // });
-  //}
 
 
+
+
+
+
+
+
+
+
+ /*chrome.storage.local.clear(function() {
+          console.log('Tutti i dati sono stati eliminati correttamente.');
+        });*/
 
 /*DistanceLayer.className = 'Lambda';
     await faceapi.tf.serialization.registerClass(DistanceLayer);*/

@@ -5,14 +5,118 @@ async function loadModels() {
 
   console.log("Modelli caricati con successo");
 }
+/*
+async function addContextImageToStorage(image){
+  detectFace(image).then((res) => {
+    for(const r of res){
+      constructDivImage(r);
+    }
+  });
+}*/
+/*
+chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+  console.log(request.message);
+});*/
+
+async function addInputImageToStorage(image){
+  await detectFace(image).then((res) => {
+    for(const r of res){
+      constructDivImage(r);
+    }
+  });
+}
+
+function areTheSameDescriptors(descriptors1, descriptors2){
+  for(let i=0; i<descriptors1.length; i++){
+    if(descriptors1[i] !== descriptors2[i]){
+      return false;
+    }
+  }
+  return true;
+}
+
+async function isInStorage(valToAdd){
+  const all = await chrome.storage.local.get();
+  for (const [key, val] of Object.entries(all)){
+    console.log(valToAdd);
+    console.log(new Float32Array(Object.values(JSON.parse(val))))
+    if(areTheSameDescriptors(valToAdd, new Float32Array(Object.values(JSON.parse(val))))){
+      console.log("sono uguali")
+      return true;
+    }
+  }
+  console.log("non sono uguali")
+  return false;
+}
+
+async function detectFace(result){
+  let canvases = [];
+  const imageLoadPromise = new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = result;
+  });
+  try {
+    await imageLoadPromise.then(async (img) => {
+      const detections = await faceapi.detectAllFaces(img).withFaceLandmarks().withFaceDescriptors();
+      for (const detection of detections){
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d', {willReadFrequently: true});
+        canvas.width = img.width;
+        canvas.height = img.height;
+        context.drawImage(img,
+          detection.detection.box.x,
+          detection.detection.box.y,
+          detection.detection.box.width,
+          detection.detection.box.height,
+          0, 0, img.width, img.height
+        );
+
+        await isInStorage(detection.descriptor).then(async(res) => {
+          console.log(res)
+          if(!res){
+            canvases.push(canvas.toDataURL('image/jpeg'));
+            await chrome.storage.local.set({[canvas.toDataURL('image/jpeg')]: JSON.stringify(detection.descriptor)});
+          }
+        });
+        canvas.remove();
+      }
+    }).then(() => {
+      if(canvases.length !== 0){
+        chrome.runtime.sendMessage('addedImage');
+      }
+      else{
+        chrome.runtime.sendMessage('existingImage');
+      }
+    })
+  } catch (error) {
+    console.error(error);
+  }  
+  return canvases;
+}
+
+async function getImage(){
+  const all = await chrome.storage.local.get();
+  for (const [key, val] of Object.entries(all)){
+    /*if(key.startsWith('savedImage')){
+      addImageToStorage(val);
+      await chrome.storage.local.remove(key);
+    }
+    else{*/
+      constructDivImage(key);
+   // }
+  } 
+}
 
 document.addEventListener('DOMContentLoaded', function() {
 
-  const dropZone = document.getElementsByClassName('drop-zone')[0];
-  const fileInput = document.getElementById('fileElem');
-  const icon = document.getElementsByTagName('i')[0];
-  
-  dropZone.addEventListener('dragover', (e) => {
+  //const dropZone = document.getElementsByClassName('drop-zone')[0];
+  //const fileInput = document.getElementById('fileElem');
+ // const icon = document.getElementsByTagName('i')[0];
+  const addFolder = document.getElementById('add-button');
+
+  /*dropZone.addEventListener('dragover', (e) => {
     e.preventDefault();
   });
 
@@ -24,11 +128,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = () => {
-        detectFace(reader.result).then((res) => {
-          for(const r of res){
-            constructDivImage(r);
-          }
-        });
+        addInputImageToStorage(reader.result);
       }
     }
   });
@@ -39,57 +139,54 @@ document.addEventListener('DOMContentLoaded', function() {
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = () => {
-        detectFace(reader.result).then((res) => {
-          for(const r of res){
-            constructDivImage(r);
-          }
-        /*chrome.storage.local.clear(function() {
-          console.log('Tutti i dati sono stati eliminati correttamente.');
-        });*/
-        });
+        addInputImageToStorage(reader.result);
       }
     }
   });
   
   icon.addEventListener('click', () => {
     fileInput.click();
+  });*/
+
+  addFolder.addEventListener('click', () => {
+    constructCardFolder();
   });
 });
 
-async function detectFace(result){
-  const imageLoadPromise = new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = reject;
-    img.src = result;
-  });
-  try {
-    await imageLoadPromise.then(async (img) => {
-      const detections = await faceapi.detectAllFaces(img).withFaceLandmarks().withFaceDescriptors();
-    
-      canvases = [];
-      for (const detection of detections){
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d', {willReadFrequently: true});
-        canvas.width = img.width;
-        canvas.height = img.height;
-        context.drawImage(img,
-          detection.detection.box.x,
-          detection.detection.box.y,
-          detection.detection.box.width,
-          detection.detection.box.height,
-          0, 0, img.width, img.height);
-        canvases.push(canvas.toDataURL('image/jpeg'));
+function constructCardFolder(){
+  const preview = document.getElementsByClassName('preview')[0];
 
-        await chrome.storage.local.set({[canvas.toDataURL('image/jpeg')]: JSON.stringify(detection)});
+  const div1 = document.createElement('div');
+  div1.className = "card";
+  div1.style.width = '150px';
 
-        canvas.remove();
-      }
-    })
-  } catch (error) {
-    console.error(error);
-  }
-  return canvases;
+  const img = new Image();
+  img.className = "card-img-top";
+  img.src = "folder.png";
+
+  const div2 = document.createElement('div');
+  div2.className = "card-body";
+
+  const input = document.createElement('input');
+  input.type = "text";
+  input.style.width = '120px';
+  input.placeholder = "Scegli un nome";
+
+  const hr = document.createElement('hr');
+
+  const a = document.createElement('a');
+  a.href = "#";
+  a.className = "btn btn-primary";
+  a.textContent = "Rileva";
+
+  div2.appendChild(input);
+  div2.appendChild(hr);
+  div2.appendChild(a);
+
+  div1.appendChild(img);
+  div1.appendChild(div2);
+
+  preview.appendChild(div1);
 }
 
 function constructDivImage(photo){
@@ -156,26 +253,7 @@ function constructDivImage(photo){
   preview.appendChild(container);
 }
 
-async function getImage(){
-  const all = await chrome.storage.local.get();
-  for (const [key, val] of Object.entries(all)){
-    if(key.startsWith('savedImage')){
-      detectFace(val).then((res) => {
-        for(const r of res){
-          constructDivImage(r);
-        }
-      });
-      chrome.storage.local.remove(key);
-      console.log(chrome.storage.local.get());
-    }
-    else{
-      constructDivImage(key);
-    }
-    /* FARE CONTROLLO SE CARICO LA STESSA IMMAGINE, ALLORA NON PRENDERLA*/
-  } 
-}
-
 (async () => {
   await loadModels();
-  await getImage();
+  await getImage();  
 })();
