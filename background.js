@@ -1,6 +1,25 @@
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if(message === 'getSavedImages'){
-    chrome.storage.local.get().then(sendResponse);
+    divs = [];
+    images = [];
+    chrome.storage.local.get().then((all) => {
+      for (const [key, val] of Object.entries(all)){
+        if(key.startsWith('div')){
+          if(val[2] === "On"){
+            divs.push(key);
+          }
+        }
+      }
+      for (const [key, val] of Object.entries(all)){
+        for (const div of divs){
+          if(key.startsWith('imageOfDiv'+div)){
+            images.push(val[1]);
+          }
+        }
+      }
+      return images;
+    }).then(sendResponse)
+
     return true;
   }
   else if(message === 'existingImage'){
@@ -41,20 +60,20 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 })
 
 chrome.runtime.onInstalled.addListener(() => {
+  //RIPARTIRE DA QUI
   chrome.contextMenus.create({
     id: 'Take image',
-    title: "Import image",
+    title: "Import image in",
+    contexts: ['image'],
+  });
+
+  chrome.contextMenus.create({
+    id: "Matteo",
+    title: "Matteo Salvini",
+    parentId: "Take image",
     contexts: ['image'],
   });
 });
-
-
-
-
-
-
-
-
 
 
 

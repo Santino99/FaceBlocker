@@ -44,7 +44,8 @@
     "tabs",
     "activeTab",
     "contextMenus",
-    "notifications"
+    "notifications",
+    "unlimitedStorage"
   ],
   "background":{
     "service_worker": "background.js"

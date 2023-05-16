@@ -29,20 +29,18 @@ async function startBlocking(all, image){
           if(detection){
               //console.log(detection);
               //console.log(img1);
-              for (const [key, val] of Object.entries(all)){ 
-                if(!key.startsWith('savedImage')){
-                  descriptor2 = new Float32Array(Object.values(JSON.parse(val)));
-                  const distance = await faceapi.euclideanDistance(detection.descriptor, descriptor2);
-                  if(distance <= 0.6){
-                      await obscure(image)
-                      console.log(distance);
-                      //console.log("Sono la stessa persona");
-                  }
-                  else{
-                      // console.log("Non sono la stessa persona");
-                  }
-                  //console.log(distance);
+              for (const val of all){ 
+                descriptor2 = new Float32Array(Object.values(JSON.parse(val)));
+                const distance = await faceapi.euclideanDistance(detection.descriptor, descriptor2);
+                if(distance <= 0.6){
+                    await obscure(image)
+                    console.log(distance);
+                    //console.log("Sono la stessa persona");
                 }
+                else{
+                    // console.log("Non sono la stessa persona");
+                }
+                //console.log(distance);
               }
           }
         }
@@ -55,8 +53,6 @@ async function startBlocking(all, image){
 
 let savedImages;
 
-//FARE CARTELLE PER I VOLTI
-// AGGIUNGERE OPZIONE DI SELEZIONE DI VOLTI CHE VOGLIO RILEVARE
 // VEDERE PER IL CONTEXT
 chrome.runtime.sendMessage('getSavedImages', (response) => {
   savedImages = response;

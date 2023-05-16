@@ -5,24 +5,23 @@
     <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.min.css">
   </head>
   <body>
-    <div id="title">
-      <h4>FaceBlocker</h4>
-    </div>
-    <div class="container">
+    <div id="folders-area" class="container">
       <div class="row justify-content-around" id="button-area">
         <div class="col-4" id="add-button">
           <button type="button" class="btn btn-success">Add folder</button>
         </div>
-        <div class="col-4" id="remove-button">
+        <!--<div class="col-4" id="remove-button">
           <button type="button" class="btn btn-danger">Rimuovi cartella</button>
         </div>
         <div class="col-4" id="modified-button">
-          <button type="button" class="btn btn-warning">Rinomina cartella</button>
+          <button type="button" class="btn btn-warning">Rinomina cartella</button>-->
         </div>
-      </div>
+        <hr>
+      <div class="preview"></div>
     </div>
-    <hr>
-   <!--<div id="drop-area">
+
+    <div id="drop-area" hidden>
+      <i class="fa fa-arrow-left"></i>
       <div class="drop-zone">
         <span class="icon">
           <i class="fa-solid fa-file-arrow-up"></i>
@@ -30,25 +29,8 @@
         <span class="text">Trascina qui le tue immagini o clicca per selezionarle. I volti rilevati verranno visualizzati sotto</span>
         <input id="fileElem" type="file" accept="image/*" multiple>
       </div>
-    </div>-->
-    <div class="preview">
-      <!--<div class="card" style="width: 150px">
-        <img class="card-img-top" src="folder.png">
-        <div class="card-body">
-          <input type="text" style="width: 120px" placeholder="Scegli un nome">
-          <hr>
-          <button style="height: 40px;" class="btn btn-success">On</button>
-          <button style="height: 40px;" class="btn btn-danger"><icon class="fa fa-x"></icon></button>
-        </div>
-      </div>-->
+      <div class="preview"></div>
     </div>
-    <div class="preview"></div>
-
-    <!--<img src="3.jpg" id="first-image">
-    <img src="matteo2.jpg" id="second-image">
-    <canvas id="myCanvas"></canvas>
-    <canvas id="myCanvas2"></canvas>
-    <button id="predict-button">Predict</button>-->
     
     <script src="node_modules/@vladmandic/face-api/dist/face-api.js"></script>
     <script src="popup2.js"></script>

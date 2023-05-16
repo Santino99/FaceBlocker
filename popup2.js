@@ -18,10 +18,10 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   console.log(request.message);
 });*/
 
-async function addInputImageToStorage(image){
-  await detectFace(image).then((res) => {
+async function addInputImageToStorage(divId, image){
+  await detectFace(divId, image).then((res) => {
     for(const r of res){
-      constructDivImage(r);
+      constructDivImage(divId, r);
     }
   });
 }
@@ -35,21 +35,23 @@ function areTheSameDescriptors(descriptors1, descriptors2){
   return true;
 }
 
-async function isInStorage(valToAdd){
+async function isInStorage(keyToAnalyze, valToAdd){
   const all = await chrome.storage.local.get();
   for (const [key, val] of Object.entries(all)){
-    console.log(valToAdd);
-    console.log(new Float32Array(Object.values(JSON.parse(val))))
-    if(areTheSameDescriptors(valToAdd, new Float32Array(Object.values(JSON.parse(val))))){
-      console.log("sono uguali")
-      return true;
+    if(key.startsWith(keyToAnalyze)){
+      console.log(valToAdd);
+      console.log(new Float32Array(Object.values(JSON.parse(val[1]))))
+      if(areTheSameDescriptors(valToAdd, new Float32Array(Object.values(JSON.parse(val[1]))))){
+        console.log("sono uguali")
+        return true;
+      }
     }
   }
   console.log("non sono uguali")
   return false;
 }
 
-async function detectFace(result){
+async function detectFace(divId, result){
   let canvases = [];
   const imageLoadPromise = new Promise((resolve, reject) => {
     const img = new Image();
@@ -73,11 +75,11 @@ async function detectFace(result){
           0, 0, img.width, img.height
         );
 
-        await isInStorage(detection.descriptor).then(async(res) => {
+        await isInStorage('imageOfDiv'+divId, detection.descriptor).then(async(res) => {
           console.log(res)
           if(!res){
             canvases.push(canvas.toDataURL('image/jpeg'));
-            await chrome.storage.local.set({[canvas.toDataURL('image/jpeg')]: JSON.stringify(detection.descriptor)});
+            await chrome.storage.local.set({['imageOfDiv'+divId+canvas.toDataURL('image/jpeg')/*JSON.stringify(detection.descriptor)*/]: [canvas.toDataURL('image/jpeg'), JSON.stringify(detection.descriptor)]});
           }
         });
         canvas.remove();
@@ -96,70 +98,109 @@ async function detectFace(result){
   return canvases;
 }
 
-async function getImage(){
+async function getFolders(){
   const all = await chrome.storage.local.get();
   for (const [key, val] of Object.entries(all)){
-    /*if(key.startsWith('savedImage')){
-      addImageToStorage(val);
-      await chrome.storage.local.remove(key);
+    if(key.startsWith('div')){
+      constructCardFolder(key, val[0], val[1], val[2], val[3]);
     }
-    else{*/
-    //constructDivImage(key);
-    await constructCardFolder(key, val[0], val[1], val[2], val[3], val[4]);
-   // }
+  }
+}
+
+async function getImages(divId){
+  const all = await chrome.storage.local.get();
+  for (const [key, val] of Object.entries(all)){
+    if(key.startsWith('savedImage')){
+      //addImageToStorage(val);
+      //await chrome.storage.local.remove(key);
+    }
+    else if(key.startsWith('imageOfDiv'+divId)){
+      constructDivImage(divId, val[0]);
+    }
   } 
 }
 
+function removeAllChildNodes(parent) {
+  while (parent.firstChild) {
+      parent.removeChild(parent.firstChild);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
-
-  //const dropZone = document.getElementsByClassName('drop-zone')[0];
-  //const fileInput = document.getElementById('fileElem');
- // const icon = document.getElementsByTagName('i')[0];
-  const addFolder = document.getElementById('add-button');
-
-  /*dropZone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-  });
-
-  dropZone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    dropZone.classList.remove('dragover');
-    const files = e.dataTransfer.files;
-    for (const file of files) {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => {
-        addInputImageToStorage(reader.result);
-      }
-    }
-  });
-
-  fileInput.addEventListener('change', () => {
-    const files = fileInput.files;
-    for (const file of files) {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => {
-        addInputImageToStorage(reader.result);
-      }
-    }
-  });
   
-  icon.addEventListener('click', () => {
-    fileInput.click();
-  });*/
-
+  const addFolder = document.getElementById('add-button');
+  
   addFolder.addEventListener('click', () => {
     const divId = new Date().getTime();
     const imgSrc = "folder.png";
     const inputValue = "";
     const bTextContent = "On";
     const bClassName = "btn btn-success";
-    constructCardFolder(divId, imgSrc, inputValue, bTextContent, bClassName).then(() => {
-      chrome.storage.local.set({[divId]: [imgSrc, inputValue, bTextContent, bClassName]});
+    constructCardFolder("div"+divId, imgSrc, inputValue, bTextContent, bClassName).then(() => {
+      chrome.storage.local.set({["div"+divId]: [imgSrc, inputValue, bTextContent, bClassName]});
     });
   });
 });
+
+async function initializeDropAreaListeners(divId){
+  const iconBackwards = document.getElementsByTagName('i')[0];
+  const dropZone = document.getElementsByClassName('drop-zone')[0];
+  const fileInput = document.getElementById('fileElem');
+  const iconUpload = document.getElementsByTagName('i')[1];
+
+  dragover = function(event){
+    event.preventDefault();
+  };
+
+  drop = function(event){
+    event.preventDefault();
+    dropZone.classList.remove('dragover');
+    const files = event.dataTransfer.files;
+    for (const file of files) {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        addInputImageToStorage(divId, reader.result);
+      }
+    }
+  };
+
+  change = function(){
+    const files = fileInput.files;
+    for (const file of files) {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        addInputImageToStorage(divId, reader.result);
+      }
+    }
+  };
+
+  click = function(){
+    fileInput.click();
+  };
+
+  dropZone.addEventListener('dragover', dragover);
+  dropZone.addEventListener('drop', drop);
+  fileInput.addEventListener('change', change);
+  iconUpload.addEventListener('click', click);
+
+  iconBackwards.addEventListener('click', () => {
+    const divFolders = document.getElementById('folders-area');
+    const divImages = document.getElementById('drop-area');
+
+    const previewImages = document.getElementsByClassName('preview')[1];
+    removeAllChildNodes(previewImages);
+
+    dropZone.removeEventListener('dragover', dragover);
+    dropZone.removeEventListener('drop', drop);
+    fileInput.removeEventListener('change', change);
+    iconUpload.removeEventListener('click', click);
+
+    divImages.setAttribute('hidden', 'hidden');
+    divFolders.removeAttribute('hidden')
+  });
+}
 
 async function constructCardFolder(divId, imgSrc, inputValue, bTextContent, bClassName){
   const preview = document.getElementsByClassName('preview')[0];
@@ -172,6 +213,15 @@ async function constructCardFolder(divId, imgSrc, inputValue, bTextContent, bCla
   const img = new Image();
   img.className = "card-img-top";
   img.src = imgSrc;
+  img.addEventListener('click', () => {
+    initializeDropAreaListeners(divId).then(()=>{
+      getImages(divId);
+    });
+    const divFolders = document.getElementById('folders-area');
+    const divImages = document.getElementById('drop-area');
+    divFolders.setAttribute('hidden', 'hidden');
+    divImages.removeAttribute('hidden')
+  })  
 
   const div2 = document.createElement('div');
   div2.className = "card-body";
@@ -184,7 +234,7 @@ async function constructCardFolder(divId, imgSrc, inputValue, bTextContent, bCla
   input.value = inputValue;
 
   input.addEventListener("change", (event) => {
-    chrome.storage.local.set({[div1.id]: [img.src, event.target.value, button1.textContent, button1.className]})
+    chrome.storage.local.set({[divId]: [img.src, event.target.value, button1.textContent, button1.className]})
   });
 
   const hr = document.createElement('hr');
@@ -198,12 +248,12 @@ async function constructCardFolder(divId, imgSrc, inputValue, bTextContent, bCla
     if(event.target.textContent === 'On'){
       button1.className = "btn btn-danger";
       button1.textContent = "Off"
-      chrome.storage.local.set({[div1.id]: [img.src, input.value, button1.textContent, button1.className]})
+      chrome.storage.local.set({[divId]: [img.src, input.value, button1.textContent, button1.className]})
     }
     else if(event.target.textContent === 'Off'){
       button1.className = "btn btn-success";
       button1.textContent = "On"
-      chrome.storage.local.set({[div1.id]: [img.src, input.value, button1.textContent, button1.className]})
+      chrome.storage.local.set({[divId]: [img.src, input.value, button1.textContent, button1.className]})
     }
   })
 
@@ -214,12 +264,21 @@ async function constructCardFolder(divId, imgSrc, inputValue, bTextContent, bCla
   button2.className = "btn btn-danger";
 
   button2.addEventListener('click', () => {
-    chrome.storage.local.remove(div1.id);
+    chrome.storage.local.remove(divId);
     preview.removeChild(div1);
   });
 
   const icon = document.createElement('icon');
   icon.className = "fa fa-x";
+  icon.addEventListener('click', () => {
+    chrome.storage.local.get().then((all) => {
+      for(const key of Object.keys(all)){
+        if(key.startsWith('imageOfDiv'+divId) || key.startsWith(divId)){
+          chrome.storage.local.remove(key);
+        }
+      }
+    });
+  })
 
   button2.appendChild(icon);
 
@@ -234,8 +293,8 @@ async function constructCardFolder(divId, imgSrc, inputValue, bTextContent, bCla
   preview.appendChild(div1);
 }
 
-function constructDivImage(photo){
-  const preview = document.getElementsByClassName('preview')[0];
+function constructDivImage(divId, photo){
+  const preview = document.getElementsByClassName('preview')[1];
   
   const container = document.createElement('div')
   container.className = 'container';
@@ -277,7 +336,7 @@ function constructDivImage(photo){
   }
   
   a.onclick = function(){
-    chrome.storage.local.remove(photo);
+    chrome.storage.local.remove('imageOfDiv'+divId+photo);
     preview.removeChild(container);
   }
 
@@ -300,5 +359,5 @@ function constructDivImage(photo){
 
 (async () => {
   await loadModels();
-  await getImage();  
+  await getFolders();  
 })();
