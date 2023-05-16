@@ -104,7 +104,8 @@ async function getImage(){
       await chrome.storage.local.remove(key);
     }
     else{*/
-      constructDivImage(key);
+    //constructDivImage(key);
+    await constructCardFolder(key, val[0], val[1], val[2], val[3], val[4]);
    // }
   } 
 }
@@ -149,20 +150,28 @@ document.addEventListener('DOMContentLoaded', function() {
   });*/
 
   addFolder.addEventListener('click', () => {
-    constructCardFolder();
+    const divId = new Date().getTime();
+    const imgSrc = "folder.png";
+    const inputValue = "";
+    const bTextContent = "On";
+    const bClassName = "btn btn-success";
+    constructCardFolder(divId, imgSrc, inputValue, bTextContent, bClassName).then(() => {
+      chrome.storage.local.set({[divId]: [imgSrc, inputValue, bTextContent, bClassName]});
+    });
   });
 });
 
-function constructCardFolder(){
+async function constructCardFolder(divId, imgSrc, inputValue, bTextContent, bClassName){
   const preview = document.getElementsByClassName('preview')[0];
 
   const div1 = document.createElement('div');
+  div1.id = divId;
   div1.className = "card";
   div1.style.width = '150px';
 
   const img = new Image();
   img.className = "card-img-top";
-  img.src = "folder.png";
+  img.src = imgSrc;
 
   const div2 = document.createElement('div');
   div2.className = "card-body";
@@ -171,17 +180,53 @@ function constructCardFolder(){
   input.type = "text";
   input.style.width = '120px';
   input.placeholder = "Scegli un nome";
+  input.style.border = "None";
+  input.value = inputValue;
+
+  input.addEventListener("change", (event) => {
+    chrome.storage.local.set({[div1.id]: [img.src, event.target.value, button1.textContent, button1.className]})
+  });
 
   const hr = document.createElement('hr');
 
-  const a = document.createElement('a');
-  a.href = "#";
-  a.className = "btn btn-primary";
-  a.textContent = "Rileva";
+  const button1 = document.createElement('button');
+  button1.className = bClassName;
+  button1.style.height = '40px';
+  button1.textContent = bTextContent;
+
+  button1.addEventListener('click', (event) => {
+    if(event.target.textContent === 'On'){
+      button1.className = "btn btn-danger";
+      button1.textContent = "Off"
+      chrome.storage.local.set({[div1.id]: [img.src, input.value, button1.textContent, button1.className]})
+    }
+    else if(event.target.textContent === 'Off'){
+      button1.className = "btn btn-success";
+      button1.textContent = "On"
+      chrome.storage.local.set({[div1.id]: [img.src, input.value, button1.textContent, button1.className]})
+    }
+  })
+
+  const button2 = document.createElement('button');
+  button2.style.height = '40px';
+  button2.style.position = 'relative';
+  button2.style.left = '30px';
+  button2.className = "btn btn-danger";
+
+  button2.addEventListener('click', () => {
+    chrome.storage.local.remove(div1.id);
+    preview.removeChild(div1);
+  });
+
+  const icon = document.createElement('icon');
+  icon.className = "fa fa-x";
+
+  button2.appendChild(icon);
 
   div2.appendChild(input);
   div2.appendChild(hr);
-  div2.appendChild(a);
+  div2.appendChild(button1);
+  div2.appendChild(button2);
 
   div1.appendChild(img);
   div1.appendChild(div2);
