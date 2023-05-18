@@ -87,8 +87,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
-chrome.contextMenus.onClicked.addListener(async (info, tab) => {
-  console.log(info)
+chrome.contextMenus.onClicked.addListener((info, tab) => {
   if(info.menuItemId.startsWith('div')){
     chrome.tabs.sendMessage(tab.id, {type: 'saveImageForContext', content: [info.menuItemId, info.srcUrl]});
   }
