@@ -1,6 +1,3 @@
-let counterFolder = 0;
-
-//RIPARTIRE CON IL METTERE LE FOTO PRESE DAL CONTEXT NELLE APPOSITE CARTELLE, CONTROLLANDO CHE NON CI SIA LA STESSA FOTO
 // VEDERE PER IL FATTO DEL ICON BACKWARDS
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if(message.type === 'getSavedImages'){
@@ -40,7 +37,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     chrome.notifications.create({
       type: "basic",
       title: "Avviso",
-      message: "Immagine " + message.content + " aggiunta correttamente",
+      message: "L'immagine " + message.content + " aggiunta correttamente",
       iconUrl: chrome.runtime.getURL('icon.png'),
     })
     sendResponse(true);
@@ -79,36 +76,49 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
     }).then(sendResponse(true));
   }
-  else if(message.type === 'getCounter'){
-    counterFolder++;
-    sendResponse(counterFolder);
+  /*else if(message.type === 'getCounter'){
+    chrome.storage.local.get(['counterFolder'], async function(items){
+      counter = (Object.entries(items))[0][1];
+      c = counter++;
+      await chrome.storage.local.set({['counterFolder']: c});
+      sendResponse(counter);
+    })
     return true;
-  }
+  }*/
 });
 
-let countSavedImages = 0;
-
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
-  if(info.menuItemId === 'Take image'){
-    //await chrome.storage.local.set({['savedImage'+countSavedImages]: info.srcUrl});
-    chrome.runtime.sendMessage('savedImage'+countSavedImages)
-    countSavedImages++;
-    /*chrome.notifications.create({
-      type: "basic",
-      title: "Avviso",
-      message: "Immagine aggiunta correttamente",
-      iconUrl: chrome.runtime.getURL('icon.png'),
-    });*/
-    return true;
+  console.log(info)
+  if(info.menuItemId.startsWith('div')){
+    //const [tab] = await chrome.tabs.query({active: true, lastFocusedWindow: true});
+    chrome.tabs.sendMessage(tab.id, {type: 'saveImageForContext', content: [info.menuItemId, info.srcUrl]});
+      /*chrome.storage.local.get(['counterSavedImages'], async (items) => {
+        counter = (Object.entries(items))[0][1];
+        detectFace(info.menuItemId, info.srcUrl, "catturata");
+        console.log(fatto);*/
+       // await chrome.storage.local.set({['savedImage'+counter]: [info.srcUrl, info.menuItemId]});
+       //  await chrome.storage.local.set({['counterSavedImages']: ++counter});
+        //chrome.runtime.sendMessage('savedImage'+counter)
+        
+        /*chrome.notifications.create({
+          type: "basic",
+          title: "Avviso",
+          message: "Immagine aggiunta correttamente",
+          iconUrl: chrome.runtime.getURL('icon.png'),
+        });*/
   }
-})
+  return true;
+});
 
 chrome.runtime.onInstalled.addListener(() => {
+  chrome.storage.local.set({['counterSavedImages']: 1});
+
   chrome.contextMenus.create({
     id: 'Take image',
     title: "Import image in",
     contexts: ['image'],
   });
+
   chrome.storage.local.get().then((all) => {
     for(const [key,val] of Object.entries(all)){
       if(key.startsWith('div')){
@@ -120,7 +130,7 @@ chrome.runtime.onInstalled.addListener(() => {
         });
       }
     }
-  }).then(() => {return true;}) 
+  }).then(() => {return true;})   
 });
 
 

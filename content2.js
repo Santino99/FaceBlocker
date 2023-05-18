@@ -1,10 +1,92 @@
 async function loadModels() {
+  await faceapi.nets.ssdMobilenetv1.loadFromUri(chrome.runtime.getURL('node_modules/@vladmandic/face-api/model'));
   await faceapi.nets.tinyFaceDetector.loadFromUri(chrome.runtime.getURL('node_modules/@vladmandic/face-api/model'));
   await faceapi.nets.faceLandmark68Net.loadFromUri(chrome.runtime.getURL('node_modules/@vladmandic/face-api/model'));
   await faceapi.nets.faceRecognitionNet.loadFromUri(chrome.runtime.getURL('node_modules/@vladmandic/face-api/model'));
 
   console.log("Modelli caricati con successo 2");
 }
+
+function areTheSameDescriptorsForContext(descriptors1, descriptors2){
+  for(let i=0; i<descriptors1.length; i++){
+    if(descriptors1[i] !== descriptors2[i]){
+      return false;
+    }
+  }
+  return true;
+}
+
+async function isInStorageForContext(valToAdd){
+  const all = await chrome.storage.local.get();
+  for (const [key, val] of Object.entries(all)){
+    if(key.startsWith('imageOfDiv')){
+      if(areTheSameDescriptorsForContext(valToAdd, new Float32Array(Object.values(JSON.parse(val[1]))))){
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
+  if(message.type === 'saveImageForContext'){
+    divId = message.content[0];
+    result = message.content[1];
+    filename = "catturata";
+    let canvases = [];
+    const imageLoadPromise = new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = result;
+    });
+    try {
+      await imageLoadPromise.then(async (img) => {
+        const detections = await faceapi.detectAllFaces(img).withFaceLandmarks().withFaceDescriptors();
+        for (const detection of detections){
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d', {willReadFrequently: true});
+          canvas.width = img.width;
+          canvas.height = img.height;
+          context.drawImage(img,
+            detection.detection.box.x,
+            detection.detection.box.y,
+            detection.detection.box.width,
+            detection.detection.box.height,
+            0, 0, img.width, img.height
+          );
+
+          await isInStorageForContext(detection.descriptor).then(async(res) => {
+            if(!res){
+              canvases.push(canvas.toDataURL('image/jpeg'));
+              await chrome.storage.local.set({['imageOfDiv'+divId+canvas.toDataURL('image/jpeg')/*JSON.stringify(detection.descriptor)*/]: [canvas.toDataURL('image/jpeg'), JSON.stringify(detection.descriptor)]});
+            }
+          });
+          canvas.remove();
+        }
+      }).then(() => {
+        if(canvases.length !== 0){
+          chrome.runtime.sendMessage({type: 'addedImage', content: filename}, (response) => {
+            if(response){
+              console.log("Ok");
+            }
+          });
+        }
+        else{
+          chrome.runtime.sendMessage({type: 'existingImage', content: filename}, (response) => {
+            if(response){
+              console.log("Ok");
+            }
+          });
+        }
+      })
+    } catch (error) {
+      console.error(error);
+    }  
+
+    return canvases;
+  }
+});
 
 async function obscure(img) {
   img.src = chrome.runtime.getURL('icon.png');
@@ -33,12 +115,11 @@ async function startBlocking(all, image){
                 descriptor2 = new Float32Array(Object.values(JSON.parse(val)));
                 const distance = await faceapi.euclideanDistance(detection.descriptor, descriptor2);
                 if(distance <= 0.6){
-                    await obscure(image)
-                    console.log(distance);
-                    //console.log("Sono la stessa persona");
+                  await obscure(image)
+                  //console.log("Sono la stessa persona");
                 }
                 else{
-                    // console.log("Non sono la stessa persona");
+                 // console.log("Non sono la stessa persona");
                 }
                 //console.log(distance);
               }

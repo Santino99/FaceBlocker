@@ -5,8 +5,8 @@ async function loadModels() {
 
   console.log("Modelli caricati con successo");
 }
-/*
-async function addContextImageToStorage(image){
+
+/*async function addContextImageToStorage(image){
   detectFace(image).then((res) => {
     for(const r of res){
       constructDivImage(r);
@@ -117,8 +117,7 @@ async function getImages(divId){
   const all = await chrome.storage.local.get();
   for (const [key, val] of Object.entries(all)){
     if(key.startsWith('savedImage')){
-      //addImageToStorage(val);
-      //await chrome.storage.local.remove(key);
+      addInputImageToStorage(val[1], val[0], "catturata").then(chrome.storage.local.remove(key));
     }
     else if(key.startsWith('imageOfDiv'+divId)){
       constructDivImage(divId, val[0]);
@@ -140,21 +139,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const divId = new Date().getTime();
     const imgSrc = "folder.png";
 
-    chrome.runtime.sendMessage({type: 'getCounter'}, (response) => {
-      const inputValue = "Folder " + response;
-      const bTextContent = "On";
-      const bClassName = "btn btn-success";
-      constructCardFolder("div"+divId, imgSrc, inputValue, bTextContent, bClassName).then(() => {
-        chrome.storage.local.set({["div"+divId]: [imgSrc, inputValue, bTextContent, bClassName]});
-      });
-      chrome.runtime.sendMessage({type: 'addedFolderForContext', content: 'div'+divId}, (response) => {
-        if(response === true){
-          console.log("Cartella aggiunta");
-        }
-        else{
-          console.log("Errore nell'aggiunta della cartella");
-        }
-      });
+    const inputValue = "Empty folder";
+    const bTextContent = "On";
+    const bClassName = "btn btn-success";
+    constructCardFolder("div"+divId, imgSrc, inputValue, bTextContent, bClassName).then(() => {
+      chrome.storage.local.set({["div"+divId]: [imgSrc, inputValue, bTextContent, bClassName]});
+    });
+    chrome.runtime.sendMessage({type: 'addedFolderForContext', content: 'div'+divId}, (response) => {
+      if(response === true){
+        console.log("Cartella aggiunta");
+      }
+      else{
+        console.log("Errore nell'aggiunta della cartella");
+      }
     });
   });
 });
