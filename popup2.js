@@ -18,12 +18,14 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   console.log(request.message);
 });*/
 
-async function addInputImageToStorage(divId, image){
-  await detectFace(divId, image).then((res) => {
+async function addInputImageToStorage(divId, image, filename){
+  //const iconBackwards = document.getElementsByTagName('i')[0];
+ // iconBackwards.disabled = true;
+  await detectFace(divId, image, filename).then((res) => {
     for(const r of res){
       constructDivImage(divId, r);
     }
-  });
+  });//.then(iconBackwards.disabled = false);
 }
 
 function areTheSameDescriptors(descriptors1, descriptors2){
@@ -35,23 +37,19 @@ function areTheSameDescriptors(descriptors1, descriptors2){
   return true;
 }
 
-async function isInStorage(keyToAnalyze, valToAdd){
+async function isInStorage(valToAdd){
   const all = await chrome.storage.local.get();
   for (const [key, val] of Object.entries(all)){
-    if(key.startsWith(keyToAnalyze)){
-      console.log(valToAdd);
-      console.log(new Float32Array(Object.values(JSON.parse(val[1]))))
+    if(key.startsWith('imageOfDiv')){
       if(areTheSameDescriptors(valToAdd, new Float32Array(Object.values(JSON.parse(val[1]))))){
-        console.log("sono uguali")
         return true;
       }
     }
   }
-  console.log("non sono uguali")
   return false;
 }
 
-async function detectFace(divId, result){
+async function detectFace(divId, result, filename){
   let canvases = [];
   const imageLoadPromise = new Promise((resolve, reject) => {
     const img = new Image();
@@ -75,8 +73,7 @@ async function detectFace(divId, result){
           0, 0, img.width, img.height
         );
 
-        await isInStorage('imageOfDiv'+divId, detection.descriptor).then(async(res) => {
-          console.log(res)
+        await isInStorage(detection.descriptor).then(async(res) => {
           if(!res){
             canvases.push(canvas.toDataURL('image/jpeg'));
             await chrome.storage.local.set({['imageOfDiv'+divId+canvas.toDataURL('image/jpeg')/*JSON.stringify(detection.descriptor)*/]: [canvas.toDataURL('image/jpeg'), JSON.stringify(detection.descriptor)]});
@@ -86,15 +83,24 @@ async function detectFace(divId, result){
       }
     }).then(() => {
       if(canvases.length !== 0){
-        chrome.runtime.sendMessage('addedImage');
+        chrome.runtime.sendMessage({type: 'addedImage', content: filename}, (response) => {
+          if(response){
+            console.log("Ok");
+          }
+        });
       }
       else{
-        chrome.runtime.sendMessage('existingImage');
+        chrome.runtime.sendMessage({type: 'existingImage', content: filename}, (response) => {
+          if(response){
+            console.log("Ok");
+          }
+        });
       }
     })
   } catch (error) {
     console.error(error);
   }  
+
   return canvases;
 }
 
@@ -133,11 +139,22 @@ document.addEventListener('DOMContentLoaded', function() {
   addFolder.addEventListener('click', () => {
     const divId = new Date().getTime();
     const imgSrc = "folder.png";
-    const inputValue = "";
-    const bTextContent = "On";
-    const bClassName = "btn btn-success";
-    constructCardFolder("div"+divId, imgSrc, inputValue, bTextContent, bClassName).then(() => {
-      chrome.storage.local.set({["div"+divId]: [imgSrc, inputValue, bTextContent, bClassName]});
+
+    chrome.runtime.sendMessage({type: 'getCounter'}, (response) => {
+      const inputValue = "Folder " + response;
+      const bTextContent = "On";
+      const bClassName = "btn btn-success";
+      constructCardFolder("div"+divId, imgSrc, inputValue, bTextContent, bClassName).then(() => {
+        chrome.storage.local.set({["div"+divId]: [imgSrc, inputValue, bTextContent, bClassName]});
+      });
+      chrome.runtime.sendMessage({type: 'addedFolderForContext', content: 'div'+divId}, (response) => {
+        if(response === true){
+          console.log("Cartella aggiunta");
+        }
+        else{
+          console.log("Errore nell'aggiunta della cartella");
+        }
+      });
     });
   });
 });
@@ -171,7 +188,7 @@ async function initializeDropAreaListeners(divId){
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = () => {
-        addInputImageToStorage(divId, reader.result);
+        addInputImageToStorage(divId, reader.result, file.name);
       }
     }
   };
@@ -234,7 +251,16 @@ async function constructCardFolder(divId, imgSrc, inputValue, bTextContent, bCla
   input.value = inputValue;
 
   input.addEventListener("change", (event) => {
-    chrome.storage.local.set({[divId]: [img.src, event.target.value, button1.textContent, button1.className]})
+    chrome.storage.local.set({[divId]: [img.src, event.target.value, button1.textContent, button1.className]}).then(()=>{
+      chrome.runtime.sendMessage({type: 'updateFolderForContext', content: divId}, (response) => {
+        if(response === true){
+          console.log("Cartella aggiunta");
+        }
+        else{
+          console.log("Errore nell'aggiunta della cartella");
+        }
+      });
+    });
   });
 
   const hr = document.createElement('hr');
@@ -264,21 +290,29 @@ async function constructCardFolder(divId, imgSrc, inputValue, bTextContent, bCla
   button2.className = "btn btn-danger";
 
   button2.addEventListener('click', () => {
-    chrome.storage.local.remove(divId);
-    preview.removeChild(div1);
-  });
+    chrome.runtime.sendMessage({type: 'removedFolderForContext', content: divId}, (response) => {
+      if(response === true){
+        chrome.storage.local.get().then((all) => {
+          for(const key of Object.keys(all)){
+            if(key.startsWith('imageOfDiv'+divId)){
+              chrome.storage.local.remove(key);
+            }
+          }
+        }).then(() => {
+          chrome.storage.local.remove(divId).then(() => {
+            preview.removeChild(div1);
+            console.log("Cartella rimossa");
+          });
+        });
+      }
+      else{
+        console.log("Errore nella rimozione della cartella");
+      }
+    });
+  }, {once: true});
 
   const icon = document.createElement('icon');
   icon.className = "fa fa-x";
-  icon.addEventListener('click', () => {
-    chrome.storage.local.get().then((all) => {
-      for(const key of Object.keys(all)){
-        if(key.startsWith('imageOfDiv'+divId) || key.startsWith(divId)){
-          chrome.storage.local.remove(key);
-        }
-      }
-    });
-  })
 
   button2.appendChild(icon);
 

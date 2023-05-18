@@ -1,5 +1,9 @@
+let counterFolder = 0;
+
+//RIPARTIRE CON IL METTERE LE FOTO PRESE DAL CONTEXT NELLE APPOSITE CARTELLE, CONTROLLANDO CHE NON CI SIA LA STESSA FOTO
+// VEDERE PER IL FATTO DEL ICON BACKWARDS
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if(message === 'getSavedImages'){
+  if(message.type === 'getSavedImages'){
     divs = [];
     images = [];
     chrome.storage.local.get().then((all) => {
@@ -22,22 +26,62 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     return true;
   }
-  else if(message === 'existingImage'){
+  else if(message.type === 'existingImage'){
     chrome.notifications.create({
       type: "basic",
       title: "Avviso",
-      message: "Quest'immagine è già stata aggiunta",
+      message: "L'immagine " + message.content + " è già stata aggiunta",
       iconUrl: chrome.runtime.getURL('icon.png'),
     });
-    return true;
+    sendResponse(true);
+    
   }
-  else if(message === 'addedImage'){
+  else if(message.type === 'addedImage'){
     chrome.notifications.create({
       type: "basic",
       title: "Avviso",
-      message: "Immagine aggiunta correttamente",
+      message: "Immagine " + message.content + " aggiunta correttamente",
       iconUrl: chrome.runtime.getURL('icon.png'),
-    });
+    })
+    sendResponse(true);
+  }
+  else if(message.type === 'addedFolderForContext'){
+    chrome.storage.local.get().then((all) => {
+      for(const [key,val] of Object.entries(all)){
+        if(key === message.content){
+          chrome.contextMenus.create({
+            id: key,
+            title: val[1],
+            parentId: 'Take image',
+            contexts: ['image'],
+          });
+        }
+      }
+    }).then(sendResponse(true));
+  }
+  else if(message.type === 'updateFolderForContext'){
+    chrome.storage.local.get().then((all) => {
+      for(const [key,val] of Object.entries(all)){
+        if(key === message.content){
+          chrome.contextMenus.update(
+            key, {title: val[1]},
+          );
+        }
+      }
+    }).then(sendResponse(true));
+  }
+  else if(message.type === 'removedFolderForContext'){
+    chrome.storage.local.get().then((all) => {
+      for(const [key,val] of Object.entries(all)){
+        if(key === message.content){
+          chrome.contextMenus.remove(key);
+        }
+      }
+    }).then(sendResponse(true));
+  }
+  else if(message.type === 'getCounter'){
+    counterFolder++;
+    sendResponse(counterFolder);
     return true;
   }
 });
@@ -60,19 +104,23 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 })
 
 chrome.runtime.onInstalled.addListener(() => {
-  //RIPARTIRE DA QUI
   chrome.contextMenus.create({
     id: 'Take image',
     title: "Import image in",
     contexts: ['image'],
   });
-
-  chrome.contextMenus.create({
-    id: "Matteo",
-    title: "Matteo Salvini",
-    parentId: "Take image",
-    contexts: ['image'],
-  });
+  chrome.storage.local.get().then((all) => {
+    for(const [key,val] of Object.entries(all)){
+      if(key.startsWith('div')){
+        chrome.contextMenus.create({
+          id: key,
+          title: val[1],
+          parentId: 'Take image',
+          contexts: ['image'],
+        });
+      }
+    }
+  }).then(() => {return true;}) 
 });
 
 

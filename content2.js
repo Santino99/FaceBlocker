@@ -54,7 +54,7 @@ async function startBlocking(all, image){
 let savedImages;
 
 // VEDERE PER IL CONTEXT
-chrome.runtime.sendMessage('getSavedImages', (response) => {
+chrome.runtime.sendMessage({type: 'getSavedImages'}, (response) => {
   savedImages = response;
   loadModels().then(function(){
     foundedImages = document.querySelectorAll('img');
