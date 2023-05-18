@@ -6,19 +6,7 @@ async function loadModels() {
   console.log("Modelli caricati con successo");
 }
 
-/*async function addContextImageToStorage(image){
-  detectFace(image).then((res) => {
-    for(const r of res){
-      constructDivImage(r);
-    }
-  });
-}*/
-/*
-chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-  console.log(request.message);
-});*/
-
-async function addInputImageToStorage(divId, image, filename){
+async function addImageToStorage(divId, image, filename){
   //const iconBackwards = document.getElementsByTagName('i')[0];
  // iconBackwards.disabled = true;
   await detectFace(divId, image, filename).then((res) => {
@@ -60,26 +48,35 @@ async function detectFace(divId, result, filename){
   try {
     await imageLoadPromise.then(async (img) => {
       const detections = await faceapi.detectAllFaces(img).withFaceLandmarks().withFaceDescriptors();
-      for (const detection of detections){
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d', {willReadFrequently: true});
-        canvas.width = img.width;
-        canvas.height = img.height;
-        context.drawImage(img,
-          detection.detection.box.x,
-          detection.detection.box.y,
-          detection.detection.box.width,
-          detection.detection.box.height,
-          0, 0, img.width, img.height
-        );
+      if(detections.length > 0){
+        for (const detection of detections){
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d', {willReadFrequently: true});
+          canvas.width = img.width;
+          canvas.height = img.height;
+          context.drawImage(img,
+            detection.detection.box.x,
+            detection.detection.box.y,
+            detection.detection.box.width,
+            detection.detection.box.height,
+            0, 0, img.width, img.height
+          );
 
-        await isInStorage(detection.descriptor).then(async(res) => {
-          if(!res){
-            canvases.push(canvas.toDataURL('image/jpeg'));
-            await chrome.storage.local.set({['imageOfDiv'+divId+canvas.toDataURL('image/jpeg')/*JSON.stringify(detection.descriptor)*/]: [canvas.toDataURL('image/jpeg'), JSON.stringify(detection.descriptor)]});
+          await isInStorageForContext(detection.descriptor).then(async(res) => {
+            if(!res){
+              canvases.push(canvas.toDataURL('image/jpeg'));
+              await chrome.storage.local.set({['imageOfDiv'+divId+canvas.toDataURL('image/jpeg')/*JSON.stringify(detection.descriptor)*/]: [canvas.toDataURL('image/jpeg'), JSON.stringify(detection.descriptor)]});
+            }
+          });
+          canvas.remove();
+        }
+      }
+      else{
+        chrome.runtime.sendMessage({type: 'noDetection', content: filename}, (response) => {
+          if(response){
+            console.log("Ok");
           }
         });
-        canvas.remove();
       }
     }).then(() => {
       if(canvases.length !== 0){
@@ -117,7 +114,7 @@ async function getImages(divId){
   const all = await chrome.storage.local.get();
   for (const [key, val] of Object.entries(all)){
     if(key.startsWith('savedImage')){
-      addInputImageToStorage(val[1], val[0], "catturata").then(chrome.storage.local.remove(key));
+      addImageToStorage(val[1], val[0], "catturata").then(chrome.storage.local.remove(key));
     }
     else if(key.startsWith('imageOfDiv'+divId)){
       constructDivImage(divId, val[0]);
@@ -174,7 +171,7 @@ async function initializeDropAreaListeners(divId){
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = () => {
-        addInputImageToStorage(divId, reader.result);
+        addImageToStorage(divId, reader.result);
       }
     }
   };
@@ -185,7 +182,7 @@ async function initializeDropAreaListeners(divId){
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = () => {
-        addInputImageToStorage(divId, reader.result, file.name);
+        addImageToStorage(divId, reader.result, file.name);
       }
     }
   };

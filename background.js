@@ -42,6 +42,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     })
     sendResponse(true);
   }
+  else if(message.type === 'noDetection'){
+    chrome.notifications.create({
+      type: "basic",
+      title: "Avviso",
+      message: "Nell'immagine " + message.content + " non è presente alcuna faccia",
+      iconUrl: chrome.runtime.getURL('icon.png'),
+    })
+    sendResponse(true);
+  }
   else if(message.type === 'addedFolderForContext'){
     chrome.storage.local.get().then((all) => {
       for(const [key,val] of Object.entries(all)){
@@ -76,36 +85,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
     }).then(sendResponse(true));
   }
-  /*else if(message.type === 'getCounter'){
-    chrome.storage.local.get(['counterFolder'], async function(items){
-      counter = (Object.entries(items))[0][1];
-      c = counter++;
-      await chrome.storage.local.set({['counterFolder']: c});
-      sendResponse(counter);
-    })
-    return true;
-  }*/
 });
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   console.log(info)
   if(info.menuItemId.startsWith('div')){
-    //const [tab] = await chrome.tabs.query({active: true, lastFocusedWindow: true});
     chrome.tabs.sendMessage(tab.id, {type: 'saveImageForContext', content: [info.menuItemId, info.srcUrl]});
-      /*chrome.storage.local.get(['counterSavedImages'], async (items) => {
-        counter = (Object.entries(items))[0][1];
-        detectFace(info.menuItemId, info.srcUrl, "catturata");
-        console.log(fatto);*/
-       // await chrome.storage.local.set({['savedImage'+counter]: [info.srcUrl, info.menuItemId]});
-       //  await chrome.storage.local.set({['counterSavedImages']: ++counter});
-        //chrome.runtime.sendMessage('savedImage'+counter)
-        
-        /*chrome.notifications.create({
-          type: "basic",
-          title: "Avviso",
-          message: "Immagine aggiunta correttamente",
-          iconUrl: chrome.runtime.getURL('icon.png'),
-        });*/
   }
   return true;
 });

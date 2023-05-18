@@ -38,11 +38,13 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
       const img = new Image();
       img.onload = () => resolve(img);
       img.onerror = reject;
+      img.crossOrigin = 'anonymous'; 
       img.src = result;
     });
     try {
       await imageLoadPromise.then(async (img) => {
         const detections = await faceapi.detectAllFaces(img).withFaceLandmarks().withFaceDescriptors();
+        console.log(detections)
         for (const detection of detections){
           const canvas = document.createElement('canvas');
           const context = canvas.getContext('2d', {willReadFrequently: true});
@@ -67,6 +69,13 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
       }).then(() => {
         if(canvases.length !== 0){
           chrome.runtime.sendMessage({type: 'addedImage', content: filename}, (response) => {
+            if(response){
+              console.log("Ok");
+            }
+          });
+        }
+        else if(canvases.length === 0 && detections.length === 0){
+          chrome.runtime.sendMessage({type: 'noDetection', content: filename}, (response) => {
             if(response){
               console.log("Ok");
             }
@@ -132,17 +141,13 @@ async function startBlocking(all, image){
   }
 };
 
-let savedImages;
-
-// VEDERE PER IL CONTEXT
 chrome.runtime.sendMessage({type: 'getSavedImages'}, (response) => {
-  savedImages = response;
   loadModels().then(function(){
     foundedImages = document.querySelectorAll('img');
     const intersectionObserver = new IntersectionObserver(function(entries, observer){
       entries.forEach(entry => {
         if(entry.isIntersecting){
-          startBlocking(savedImages, entry.target).then(observer.unobserve(entry.target))
+          startBlocking(response, entry.target).then(observer.unobserve(entry.target))
         }
       })
     })
@@ -160,11 +165,9 @@ chrome.runtime.sendMessage({type: 'getSavedImages'}, (response) => {
       summaries.forEach(mutation => {
         imagesToAdd = [];
         mutation.added.forEach((node) => {
-          // console.log(node);
           if(node.nodeType === Node.ELEMENT_NODE){
             if(node.shadowRoot){
               const shadowRoot = node.shadowRoot;
-              // console.log(shadowRoot.querySelectorAll('img'))
               shadowRoot.querySelectorAll('img').forEach(image => {
                 image.onload = function(){
                   intersectionObserver.observe(image)
@@ -172,7 +175,6 @@ chrome.runtime.sendMessage({type: 'getSavedImages'}, (response) => {
               })
             }
             else{
-              //console.log(node.querySelectorAll('img'))
               node.querySelectorAll('img').forEach(image => {
                 image.onload = function(){
                   intersectionObserver.observe(image)
