@@ -1,11 +1,11 @@
 // VEDERE PER IL FATTO DEL ICON BACKWARDS
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if(message.type === 'getSavedImages'){
-    divs = [];
-    images = [];
+    let divs = [];
+    let images = [];
     chrome.storage.local.get().then((all) => {
       for (const [key, val] of Object.entries(all)){
-        if(key.startsWith('div')){
+        if(key.startsWith('folder')){
           if(val[2] === "On"){
             divs.push(key);
           }
@@ -13,7 +13,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
       for (const [key, val] of Object.entries(all)){
         for (const div of divs){
-          if(key.startsWith('imageOfDiv'+div)){
+          if(key.startsWith('imageOfFolder'+div)){
             images.push(val[1]);
           }
         }
@@ -88,7 +88,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
-  if(info.menuItemId.startsWith('div')){
+  if(info.menuItemId.startsWith('folder')){
     chrome.tabs.sendMessage(tab.id, {type: 'saveImageForContext', content: [info.menuItemId, info.srcUrl]});
   }
   return true;
@@ -105,7 +105,7 @@ chrome.runtime.onInstalled.addListener(() => {
 
   chrome.storage.local.get().then((all) => {
     for(const [key,val] of Object.entries(all)){
-      if(key.startsWith('div')){
+      if(key.startsWith('folder')){
         chrome.contextMenus.create({
           id: key,
           title: val[1],

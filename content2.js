@@ -19,7 +19,7 @@ function areTheSameDescriptorsForContext(descriptors1, descriptors2){
 async function isInStorageForContext(valToAdd){
   const all = await chrome.storage.local.get();
   for (const [key, val] of Object.entries(all)){
-    if(key.startsWith('imageOfDiv')){
+    if(key.startsWith('imageOfFolder')){
       if(areTheSameDescriptorsForContext(valToAdd, new Float32Array(Object.values(JSON.parse(val[1]))))){
         return true;
       }
@@ -61,7 +61,7 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
           await isInStorageForContext(detection.descriptor).then(async(res) => {
             if(!res){
               canvases.push(canvas.toDataURL('image/jpeg'));
-              await chrome.storage.local.set({['imageOfDiv'+divId+canvas.toDataURL('image/jpeg')/*JSON.stringify(detection.descriptor)*/]: [canvas.toDataURL('image/jpeg'), JSON.stringify(detection.descriptor)]});
+              await chrome.storage.local.set({['imageOfFolder'+divId+canvas.toDataURL('image/jpeg')/*JSON.stringify(detection.descriptor)*/]: [canvas.toDataURL('image/jpeg'), JSON.stringify(detection.descriptor)]});
             }
           });
           canvas.remove();

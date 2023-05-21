@@ -28,7 +28,7 @@ function areTheSameDescriptors(descriptors1, descriptors2){
 async function isInStorage(valToAdd){
   const all = await chrome.storage.local.get();
   for (const [key, val] of Object.entries(all)){
-    if(key.startsWith('imageOfDiv')){
+    if(key.startsWith('imageOfFolder')){
       if(areTheSameDescriptors(valToAdd, new Float32Array(Object.values(JSON.parse(val[1]))))){
         return true;
       }
@@ -62,10 +62,10 @@ async function detectFace(divId, result, filename){
             0, 0, img.width, img.height
           );
 
-          await isInStorageForContext(detection.descriptor).then(async(res) => {
+          await isInStorage(detection.descriptor).then(async(res) => {
             if(!res){
               canvases.push(canvas.toDataURL('image/jpeg'));
-              await chrome.storage.local.set({['imageOfDiv'+divId+canvas.toDataURL('image/jpeg')/*JSON.stringify(detection.descriptor)*/]: [canvas.toDataURL('image/jpeg'), JSON.stringify(detection.descriptor)]});
+              await chrome.storage.local.set({['imageOfFolder'+divId+canvas.toDataURL('image/jpeg')/*JSON.stringify(detection.descriptor)*/]: [canvas.toDataURL('image/jpeg'), JSON.stringify(detection.descriptor)]});
             }
           });
           canvas.remove();
@@ -104,7 +104,7 @@ async function detectFace(divId, result, filename){
 async function getFolders(){
   const all = await chrome.storage.local.get();
   for (const [key, val] of Object.entries(all)){
-    if(key.startsWith('div')){
+    if(key.startsWith('folder')){
       constructCardFolder(key, val[0], val[1], val[2], val[3]);
     }
   }
@@ -116,7 +116,7 @@ async function getImages(divId){
     if(key.startsWith('savedImage')){
       addImageToStorage(val[1], val[0], "catturata").then(chrome.storage.local.remove(key));
     }
-    else if(key.startsWith('imageOfDiv'+divId)){
+    else if(key.startsWith('imageOfFolder'+divId)){
       constructDivImage(divId, val[0]);
     }
   } 
@@ -139,10 +139,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const inputValue = "Empty folder";
     const bTextContent = "On";
     const bClassName = "btn btn-success";
-    constructCardFolder("div"+divId, imgSrc, inputValue, bTextContent, bClassName).then(() => {
-      chrome.storage.local.set({["div"+divId]: [imgSrc, inputValue, bTextContent, bClassName]});
+    constructCardFolder("folder"+divId, imgSrc, inputValue, bTextContent, bClassName).then(() => {
+      chrome.storage.local.set({["folder"+divId]: [imgSrc, inputValue, bTextContent, bClassName]});
     });
-    chrome.runtime.sendMessage({type: 'addedFolderForContext', content: 'div'+divId}, (response) => {
+    chrome.runtime.sendMessage({type: 'addedFolderForContext', content: 'folder'+divId}, (response) => {
       if(response === true){
         console.log("Cartella aggiunta");
       }
@@ -288,7 +288,7 @@ async function constructCardFolder(divId, imgSrc, inputValue, bTextContent, bCla
       if(response === true){
         chrome.storage.local.get().then((all) => {
           for(const key of Object.keys(all)){
-            if(key.startsWith('imageOfDiv'+divId)){
+            if(key.startsWith('imageOfFolder'+divId)){
               chrome.storage.local.remove(key);
             }
           }
@@ -364,7 +364,7 @@ function constructDivImage(divId, photo){
   }
   
   a.onclick = function(){
-    chrome.storage.local.remove('imageOfDiv'+divId+photo);
+    chrome.storage.local.remove('imageOfFolder'+divId+photo);
     preview.removeChild(container);
   }
 

@@ -1,38 +1,11 @@
-/*#first-image{
-    width: 850px;
-    height: 500px;
+html{
+    height: 0px;
+    border: none;
 }
-
-#second-image{
-    width: 850px;
-    height: 500px;
-}
-
-#myCanvas{
-    position: relative;
-    bottom: 1000px;
-    width: 105px;
-    height: 105px;
-    background-color: transparent
-}
-
-#myCanvas2{
-    position: relative;
-    bottom: 1000px;
-    width: 105px;
-    height: 105px;
-    background-color: transparent
-}*/
 
 body {
-    width: 100%;
     padding: 10px;
 }
-/*
-#title {
-    justify-content: center;
-    display: flex;
-}*/
 
 #folders-area {
     padding: 0;
