@@ -12,6 +12,8 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
         result = message.content[1];
         filename = "catturata";
         let canvases = [];
+        let noDetection = false;
+
         const imageLoadPromise = new Promise((resolve, reject) => {
             const img = new Image();
             img.onload = () => resolve(img);
@@ -23,32 +25,37 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
         await imageLoadPromise.then(async (img) => {
             const detections = await faceapi.detectAllFaces(img);
             console.log(detections)
-            for (const detection of detections){
-                const canvas = document.createElement('canvas');
-                const context = canvas.getContext('2d', {willReadFrequently: true});
-                canvas.width = 105;
-                canvas.height = 105
-                context.drawImage(img,
-                    detection.box.x,
-                    detection.box.y,
-                    detection.box.width,
-                    detection.box.height,
-                    0, 0, 105, 105
-                );
+            if(detections.length > 0){
+              for (const detection of detections){
+                  const canvas = document.createElement('canvas');
+                  const context = canvas.getContext('2d', {willReadFrequently: true});
+                  canvas.width = 105;
+                  canvas.height = 105
+                  context.drawImage(img,
+                      detection.box.x,
+                      detection.box.y,
+                      detection.box.width,
+                      detection.box.height,
+                      0, 0, 105, 105
+                  );
 
-                canvases.push(canvas.toDataURL('image/jpeg'));
-                await chrome.storage.local.set({['imageOfFolder'+divId+canvas.toDataURL('image/jpeg')]: canvas.toDataURL('image/jpeg')});
-                canvas.remove();
+                  canvases.push(canvas.toDataURL('image/jpeg'));
+                  await chrome.storage.local.set({['imageOfFolder'+divId+canvas.toDataURL('image/jpeg')]: canvas.toDataURL('image/jpeg')});
+                  canvas.remove();
+              }
+            }
+            else{
+              noDetection = true;
             }
         }).then(() => {
-            if(canvases.length !== 0){
+            if(canvases.length !== 0 && !noDetection){
                 chrome.runtime.sendMessage({type: 'addedImage', content: filename}, (response) => {
                     if(response){
                         console.log("Ok");
                     }
                 });
             }
-            else if(canvases.length === 0 && detections.length === 0){
+            else if(noDetection){
                 chrome.runtime.sendMessage({type: 'noDetection', content: filename}, (response) => {
                     if(response){
                         console.log("Ok");

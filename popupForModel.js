@@ -14,6 +14,8 @@ async function addImageToStorage(divId, image, filename){
 
 async function detectFace(divId, result, filename){
   let canvases = [];
+  let noDetection = false;
+
   const imageLoadPromise = new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => resolve(img);
@@ -42,15 +44,18 @@ async function detectFace(divId, result, filename){
         }
       }
       else{
-        chrome.runtime.sendMessage({type: 'noDetection', content: filename}, (response) => {
+        noDetection = true;
+      }
+    }).then(() => {
+      if(canvases.length !== 0 && !noDetection){
+        chrome.runtime.sendMessage({type: 'addedImage', content: filename}, (response) => {
           if(response){
             console.log("Ok");
           }
         });
       }
-    }).then(() => {
-      if(canvases.length !== 0){
-        chrome.runtime.sendMessage({type: 'addedImage', content: filename}, (response) => {
+      else if(noDetection){
+        chrome.runtime.sendMessage({type: 'noDetection', content: filename}, (response) => {
           if(response){
             console.log("Ok");
           }

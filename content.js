@@ -34,6 +34,8 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
     result = message.content[1];
     filename = "catturata";
     let canvases = [];
+    let noDetection = false;
+
     const imageLoadPromise = new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => resolve(img);
@@ -45,36 +47,41 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
       await imageLoadPromise.then(async (img) => {
         const detections = await faceapi.detectAllFaces(img).withFaceLandmarks().withFaceDescriptors();
         console.log(detections)
-        for (const detection of detections){
-          const canvas = document.createElement('canvas');
-          const context = canvas.getContext('2d', {willReadFrequently: true});
-          canvas.width = img.width;
-          canvas.height = img.height;
-          context.drawImage(img,
-            detection.detection.box.x,
-            detection.detection.box.y,
-            detection.detection.box.width,
-            detection.detection.box.height,
-            0, 0, img.width, img.height
-          );
+        if(detections.length > 0){
+          for (const detection of detections){
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d', {willReadFrequently: true});
+            canvas.width = img.width;
+            canvas.height = img.height;
+            context.drawImage(img,
+              detection.detection.box.x,
+              detection.detection.box.y,
+              detection.detection.box.width,
+              detection.detection.box.height,
+              0, 0, img.width, img.height
+            );
 
-          await isInStorageForContext(detection.descriptor).then(async(res) => {
-            if(!res){
-              canvases.push(canvas.toDataURL('image/jpeg'));
-              await chrome.storage.local.set({['imageOfFolder'+divId+canvas.toDataURL('image/jpeg')/*JSON.stringify(detection.descriptor)*/]: [canvas.toDataURL('image/jpeg'), JSON.stringify(detection.descriptor)]});
-            }
-          });
-          canvas.remove();
+            await isInStorageForContext(detection.descriptor).then(async(res) => {
+              if(!res){
+                canvases.push(canvas.toDataURL('image/jpeg'));
+                await chrome.storage.local.set({['imageOfFolder'+divId+canvas.toDataURL('image/jpeg')/*JSON.stringify(detection.descriptor)*/]: [canvas.toDataURL('image/jpeg'), JSON.stringify(detection.descriptor)]});
+              }
+            });
+            canvas.remove();
+          }
+        }
+        else{
+          noDetection = true;
         }
       }).then(() => {
-        if(canvases.length !== 0){
+        if(canvases.length !== 0 && !noDetection){
           chrome.runtime.sendMessage({type: 'addedImage', content: filename}, (response) => {
             if(response){
               console.log("Ok");
             }
           });
         }
-        else if(canvases.length === 0 && detections.length === 0){
+        else if(noDetection){
           chrome.runtime.sendMessage({type: 'noDetection', content: filename}, (response) => {
             if(response){
               console.log("Ok");
