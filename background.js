@@ -69,9 +69,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     chrome.storage.local.get().then((all) => {
       for(const [key,val] of Object.entries(all)){
         if(key === message.content){
-          chrome.contextMenus.update(
-            key, {title: val[1]},
-          );
+          if(val[1] === ""){
+            chrome.contextMenus.update(
+              key, {title: "Untitled Folder"},
+            );
+          }
+          else{
+            chrome.contextMenus.update(
+              key, {title: val[1]},
+            );
+          }
         }
       }
     }).then(sendResponse(true));
@@ -95,8 +102,6 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 });
 
 chrome.runtime.onInstalled.addListener(() => {
-  chrome.storage.local.set({['counterSavedImages']: 1});
-
   chrome.contextMenus.create({
     id: 'Take image',
     title: "Import image in",
