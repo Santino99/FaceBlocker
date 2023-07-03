@@ -1,9 +1,33 @@
+const noFolder = document.getElementById('noFolder');
+const noImages = document.getElementById('noImages');
+
 async function loadModels() {
   await faceapi.nets.ssdMobilenetv1.loadFromUri('node_modules/@vladmandic/face-api/model');
   await faceapi.nets.faceLandmark68Net.loadFromUri('node_modules/@vladmandic/face-api/model');
   await faceapi.nets.faceRecognitionNet.loadFromUri('node_modules/@vladmandic/face-api/model');
 
   console.log("Modelli caricati con successo");
+}
+
+async function thereIsFolders(){
+  const all = await chrome.storage.local.get();
+  for (const [key, val] of Object.entries(all)){
+    if(key.startsWith('folder')){
+      return true;
+    }
+  }
+  return false;
+}
+
+async function thereIsImages(divId){
+  const all = await chrome.storage.local.get();
+  for (const [key, val] of Object.entries(all)){
+    console.log(key)
+    if(key.startsWith('imageOfFolder'+divId)){
+      return true;
+    }
+  }
+  return false;
 }
 
 async function addImageToStorage(divId, image, filename){
@@ -118,10 +142,7 @@ async function getFolders(){
 async function getImages(divId){
   const all = await chrome.storage.local.get();
   for (const [key, val] of Object.entries(all)){
-    if(key.startsWith('savedImage')){
-      addImageToStorage(val[1], val[0], "catturata").then(chrome.storage.local.remove(key));
-    }
-    else if(key.startsWith('imageOfFolder'+divId)){
+    if(key.startsWith('imageOfFolder'+divId)){
       constructDivImage(divId, val[0]);
     }
   } 
@@ -134,9 +155,8 @@ function removeAllChildNodes(parent) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-  
   const addFolder = document.getElementById('add-button');
-  
+
   addFolder.addEventListener('click', () => {
     const divId = new Date().getTime();
     const imgSrc = "folder.png";
@@ -150,12 +170,22 @@ document.addEventListener('DOMContentLoaded', function() {
     chrome.runtime.sendMessage({type: 'addedFolderForContext', content: 'folder'+divId}, (response) => {
       if(response === true){
         console.log("Cartella aggiunta");
+        noFolder.setAttribute('hidden','hidden')
       }
       else{
         console.log("Errore nell'aggiunta della cartella");
       }
     });
   });
+  thereIsFolders().then((response) => {
+    if(response){
+      noFolder.setAttribute('hidden','hidden')
+    }
+    else{
+      noFolder.removeAttribute('hidden')
+    }
+  })
+  getFolders();
 });
 
 async function initializeDropAreaListeners(divId){
@@ -176,6 +206,7 @@ async function initializeDropAreaListeners(divId){
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = () => {
+        noImages.setAttribute('hidden','hidden')
         addImageToStorage(divId, reader.result);
       }
     }
@@ -187,6 +218,7 @@ async function initializeDropAreaListeners(divId){
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = () => {
+        noImages.setAttribute('hidden','hidden')
         addImageToStorage(divId, reader.result, file.name);
       }
     }
@@ -231,6 +263,15 @@ async function constructCardFolder(divId, imgSrc, inputValue, bTextContent, bCla
   img.src = imgSrc;
   img.addEventListener('click', () => {
     initializeDropAreaListeners(divId).then(()=>{
+      console.log(divId)
+      thereIsImages(divId).then((response) => {
+        if(response){
+          noImages.setAttribute('hidden','hidden')
+        }
+        else{
+          noImages.removeAttribute('hidden')
+        }
+      })
       getImages(divId);
     });
     const divFolders = document.getElementById('folders-area');
@@ -301,6 +342,14 @@ async function constructCardFolder(divId, imgSrc, inputValue, bTextContent, bCla
           chrome.storage.local.remove(divId).then(() => {
             preview.removeChild(div1);
             console.log("Cartella rimossa");
+            thereIsFolders().then((response) => {
+              if(response){
+                noFolder.setAttribute('hidden','hidden')
+              }
+              else{
+                noFolder.removeAttribute('hidden')
+              }
+            })
           });
         });
       }
@@ -369,8 +418,18 @@ function constructDivImage(divId, photo){
   }
   
   a.onclick = function(){
-    chrome.storage.local.remove('imageOfFolder'+divId+photo);
-    preview.removeChild(container);
+    chrome.storage.local.remove('imageOfFolder'+divId+photo).then(()=>{
+      console.log(divId)
+      thereIsImages(divId).then((response) => {
+        if(response){
+          noImages.setAttribute('hidden','hidden')
+        }
+        else{
+          noImages.removeAttribute('hidden')
+        }
+      })
+      preview.removeChild(container);
+    });
   }
 
   img.onmouseover = function(){
@@ -392,5 +451,5 @@ function constructDivImage(divId, photo){
 
 (async () => {
   await loadModels();
-  await getFolders();  
+  //await getFolders();  
 })();
