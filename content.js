@@ -3,7 +3,6 @@ async function loadModels() {
   await faceapi.nets.tinyFaceDetector.loadFromUri(chrome.runtime.getURL('node_modules/@vladmandic/face-api/model'));
   await faceapi.nets.faceLandmark68Net.loadFromUri(chrome.runtime.getURL('node_modules/@vladmandic/face-api/model'));
   await faceapi.nets.faceRecognitionNet.loadFromUri(chrome.runtime.getURL('node_modules/@vladmandic/face-api/model'));
-
   console.log("Modelli caricati con successo 2");
 }
 
@@ -122,7 +121,13 @@ async function startBlocking(all, image){
     });
     try {
       await imageLoadPromise.then(async (img) => {
-        detections = await faceapi.detectAllFaces(img, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptors();
+        const model = await chrome.storage.local.get("activeModel");
+        if(Object.values(model)[0] === 'tiny'){
+          detections = await faceapi.detectAllFaces(img, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptors();
+        }
+        else if(Object.values(model)[0] === 'bigger'){
+          detections = await faceapi.detectAllFaces(img).withFaceLandmarks().withFaceDescriptors();
+        }
         for(const detection of detections){
           if(detection){
               //console.log(detection);

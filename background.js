@@ -37,7 +37,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     chrome.notifications.create({
       type: "basic",
       title: "Avviso",
-      message: "L'immagine " + message.content + " aggiunta correttamente",
+      message: "L'immagine " + message.content + " è stata aggiunta correttamente",
       iconUrl: chrome.runtime.getURL('icon.png'),
     })
     sendResponse(true);

@@ -1,5 +1,7 @@
 const noFolder = document.getElementById('noFolder');
 const noImages = document.getElementById('noImages');
+const tinyModelButton = document.getElementById('tiny-model');
+const biggerModelButton = document.getElementById('bigger-model'); 
 
 async function loadModels() {
   await faceapi.nets.ssdMobilenetv1.loadFromUri('node_modules/@vladmandic/face-api/model');
@@ -154,8 +156,24 @@ function removeAllChildNodes(parent) {
   }
 }
 
+async function setModels(){
+  const model = await chrome.storage.local.get("activeModel");
+  if(Object.values(model).length === 0){
+    chrome.storage.local.set({"activeModel": 'tiny'})
+  }
+  else if(Object.values(model)[0] === "tiny"){
+    biggerModelButton.classList.remove('active');
+    tinyModelButton.classList.add('active')
+  }
+  else if(Object.values(model)[0] === "bigger"){
+    tinyModelButton.classList.remove('active');
+    biggerModelButton.classList.add('active')
+  }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   const addFolder = document.getElementById('add-button');
+  setModels();
 
   addFolder.addEventListener('click', () => {
     const divId = new Date().getTime();
@@ -177,6 +195,23 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
   });
+
+  tinyModelButton.addEventListener('click', () => {
+    if(biggerModelButton.classList.contains('active')){
+      biggerModelButton.classList.remove('active');
+      tinyModelButton.classList.add('active')
+      chrome.storage.local.set({"activeModel": 'tiny'})
+    }
+  })
+
+  biggerModelButton.addEventListener('click', () => {
+    if(tinyModelButton.classList.contains('active')){
+      tinyModelButton.classList.remove('active');
+      biggerModelButton.classList.add('active')
+      chrome.storage.local.set({"activeModel": 'bigger'})
+    }
+  })
+
   thereIsFolders().then((response) => {
     if(response){
       noFolder.setAttribute('hidden','hidden')
@@ -360,7 +395,7 @@ async function constructCardFolder(divId, imgSrc, inputValue, bTextContent, bCla
   }, {once: true});
 
   const icon = document.createElement('icon');
-  icon.className = "fa fa-x";
+  icon.className = "fa fa-trash";
 
   button2.appendChild(icon);
 
@@ -451,5 +486,4 @@ function constructDivImage(divId, photo){
 
 (async () => {
   await loadModels();
-  //await getFolders();  
 })();
