@@ -6,15 +6,25 @@
   </head>
   <body>
     <div id="folders-area" class="container">
-      <div class="row justify-content-start" style="margin: 0;" id="button-area">
-        <div class="col-4" id="add-button">
+      <div id="button-area" class="row justify-content-around" style="margin: 0;">
+        <!--<div class="col-4" id="add-button">
           <button type="button" class="btn btn-success">Add Person</button>
-        </div>
+        </div>-->
         <div class="col-4">
           <button type="button" id="tiny-model" class="active btn btn-primary btn3d">Tiny Model</button>
         </div>
         <div class="col-4">
           <button type="button" id="bigger-model" class="btn btn-primary btn3d">Big Model</button>
+        </div>
+      </div>
+      <hr>
+      <div id="drop-area-folders">
+        <div id="drop-zone-folders">
+          <span class="icon">
+            <i id="upload-face-folder"class="fa-solid fa-file-arrow-up"></i>
+          </span>
+          <span class="text">Carica l'immagine di una persona per creare una cartella</span>
+          <input id="choose-face-folder" type="file" accept="image/*">
         </div>
       </div>
       <hr>
@@ -25,13 +35,13 @@
     </div>
 
     <div id="drop-area" hidden>
-      <i class="fa fa-arrow-left"></i>
-      <div class="drop-zone">
+      <i id="backwards" class="fa fa-arrow-left"></i>
+      <div id="drop-zone">
         <span class="icon">
-          <i class="fa-solid fa-file-arrow-up"></i>
+          <i id="upload-face" class="fa-solid fa-file-arrow-up"></i>
         </span>
         <span class="text">Trascina qui le tue immagini o clicca per selezionarle. I volti rilevati verranno visualizzati sotto</span>
-        <input id="fileElem" type="file" accept="image/*" multiple>
+        <input id="choose-face" type="file" accept="image/*" multiple>
       </div>
       <div id="noImages" class="justify-content-center">
         <h2>Nessuna Immagine Presente</h2>

@@ -51,6 +51,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     })
     sendResponse(true);
   }
+  else if(message.type === 'moreDetections'){
+    chrome.notifications.create({
+      type: "basic",
+      title: "Avviso",
+      message: "Nell'immagine " + message.content + " è presente più di una faccia",
+      iconUrl: chrome.runtime.getURL('icon.png'),
+    })
+    sendResponse(true);
+  }
   else if(message.type === 'addedFolderForContext'){
     chrome.storage.local.get().then((all) => {
       for(const [key,val] of Object.entries(all)){

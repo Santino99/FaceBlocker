@@ -63,6 +63,63 @@ async function isInStorage(valToAdd){
   return false;
 }
 
+async function detectFaceForFolders(result){
+  let face;
+  let noDetection = false;
+  let moreDetections = false;
+
+  const imageLoadPromise = new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = result;
+  });
+  try {
+    await imageLoadPromise.then(async (img) => {
+      const detections = await faceapi.detectAllFaces(img);
+      if(detections.length === 1){
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d', {willReadFrequently: true});
+        canvas.width = img.width;
+        canvas.height = img.height;
+        context.drawImage(img,
+          detections[0].box.x,
+          detections[0].box.y,
+          detections[0].box.width,
+          detections[0].box.height,
+          0, 0, img.width, img.height
+        );
+        face = canvas.toDataURL('image/jpeg');
+        canvas.remove();
+      }
+      else if(detection.length === 0){
+        noDetection = true;
+      }
+      else if(detections.length > 1){
+        moreDetections = true;
+      }
+    }).then(() => {
+      if(noDetection){
+        chrome.runtime.sendMessage({type: 'noDetection', content: filename}, (response) => {
+          if(response){
+            console.log("Ok");
+          }
+        });
+      }
+      else if(moreDetections){
+        chrome.runtime.sendMessage({type: 'moreDetections', content: filename}, (response) => {
+          if(response){
+            console.log("Ok");
+          }
+        });
+      }
+    })
+  } catch (error) {
+    console.error(error);
+  }  
+  return face;
+}
+
 async function detectFace(divId, result, filename){
   let canvases = [];
   let noDetection = false;
@@ -172,10 +229,85 @@ async function setModels(){
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-  const addFolder = document.getElementById('add-button');
+  //const addFolder = document.getElementById('add-button');
   setModels();
 
-  addFolder.addEventListener('click', () => {
+  const dropZoneFolders = document.getElementById('drop-zone-folders');
+  const chooseFaceFolder= document.getElementById('choose-face-folder');
+  const uploadFaceFolder = document.getElementById('upload-face-folder');
+
+  dragover = function(event){
+    event.preventDefault();
+  };
+
+  drop = function(event){
+    event.preventDefault();
+    dropZoneFolders.classList.remove('dragover');
+    const files = event.dataTransfer.files;
+    const reader = new FileReader();
+    reader.readAsDataURL(files[0]);
+    reader.onload = () => {
+      detectFaceForFolders(reader.result).then((face) => {
+        const divId = new Date().getTime();
+        const imgSrc = face;
+
+        const inputValue = "Empty folder";
+        const bTextContent = "On";
+        const bClassName = "btn btn-success";
+        constructCardFolder("folder"+divId, imgSrc, inputValue, bTextContent, bClassName).then(() => {
+          chrome.storage.local.set({["folder"+divId]: [imgSrc, inputValue, bTextContent, bClassName]});
+        });
+        chrome.runtime.sendMessage({type: 'addedFolderForContext', content: 'folder'+divId}, (response) => {
+          if(response === true){
+            console.log("Cartella aggiunta");
+            noFolder.setAttribute('hidden','hidden')
+          }
+          else{
+            console.log("Errore nell'aggiunta della cartella");
+          }
+        });
+      });
+    }
+  };
+
+  change = function(){
+    const files = chooseFaceFolder.files;
+    const reader = new FileReader();
+    reader.readAsDataURL(files[0]);
+    reader.onload = () => {
+      detectFaceForFolders(reader.result).then((face) => {
+        const divId = new Date().getTime();
+        const imgSrc = face;
+
+        const inputValue = "Empty folder";
+        const bTextContent = "On";
+        const bClassName = "btn btn-success";
+        constructCardFolder("folder"+divId, imgSrc, inputValue, bTextContent, bClassName).then(() => {
+          chrome.storage.local.set({["folder"+divId]: [imgSrc, inputValue, bTextContent, bClassName]});
+        });
+        chrome.runtime.sendMessage({type: 'addedFolderForContext', content: 'folder'+divId}, (response) => {
+          if(response === true){
+            console.log("Cartella aggiunta");
+            noFolder.setAttribute('hidden','hidden')
+          }
+          else{
+            console.log("Errore nell'aggiunta della cartella");
+          }
+        });
+      });
+    }
+  };
+
+  click = function(){
+    chooseFaceFolder.click();
+  };
+
+  dropZoneFolders.addEventListener('dragover', dragover);
+  dropZoneFolders.addEventListener('drop', drop);
+  chooseFaceFolder.addEventListener('change', change);
+  uploadFaceFolder.addEventListener('click', click);
+
+  /*addFolder.addEventListener('click', () => {
     const divId = new Date().getTime();
     const imgSrc = "folder.png";
 
@@ -194,7 +326,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("Errore nell'aggiunta della cartella");
       }
     });
-  });
+  });*/
 
   tinyModelButton.addEventListener('click', () => {
     if(biggerModelButton.classList.contains('active')){
@@ -224,10 +356,10 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 async function initializeDropAreaListeners(divId){
-  const iconBackwards = document.getElementsByTagName('i')[0];
-  const dropZone = document.getElementsByClassName('drop-zone')[0];
-  const fileInput = document.getElementById('fileElem');
-  const iconUpload = document.getElementsByTagName('i')[1];
+  const iconBackwards = document.getElementById('backwards')
+  const dropZone = document.getElementById('drop-zone');
+  const fileInput = document.getElementById('choose-face');
+  const iconUpload = document.getElementById('upload-face');
 
   dragover = function(event){
     event.preventDefault();
@@ -242,7 +374,7 @@ async function initializeDropAreaListeners(divId){
       reader.readAsDataURL(file);
       reader.onload = () => {
         noImages.setAttribute('hidden','hidden')
-        addImageToStorage(divId, reader.result);
+        addImageToStorage(divId, reader.result, file.name);
       }
     }
   };
@@ -296,6 +428,8 @@ async function constructCardFolder(divId, imgSrc, inputValue, bTextContent, bCla
   const img = new Image();
   img.className = "card-img-top";
   img.src = imgSrc;
+  img.style.width = '150px';
+  img.style.height = '150px';
   img.addEventListener('click', () => {
     initializeDropAreaListeners(divId).then(()=>{
       console.log(divId)
@@ -366,6 +500,7 @@ async function constructCardFolder(divId, imgSrc, inputValue, bTextContent, bCla
 
   button2.addEventListener('click', () => {
     chrome.runtime.sendMessage({type: 'removedFolderForContext', content: divId}, (response) => {
+      console.log("ciano")
       if(response === true){
         chrome.storage.local.get().then((all) => {
           for(const key of Object.keys(all)){
