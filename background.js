@@ -60,6 +60,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     })
     sendResponse(true);
   }
+  else if(message.type === 'addedFolderFromContext'){
+    chrome.notifications.create({
+      type: "basic",
+      title: "Avviso",
+      message: "Cartella creata correttamente",
+      iconUrl: chrome.runtime.getURL('icon.png'),
+    })
+    sendResponse(true);
+  }
   else if(message.type === 'addedFolderForContext'){
     chrome.storage.local.get().then((all) => {
       for(const [key,val] of Object.entries(all)){
@@ -104,13 +113,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
+  console.log(info)
   if(info.menuItemId.startsWith('folder')){
-    chrome.tabs.sendMessage(tab.id, {type: 'saveImageForContext', content: [info.menuItemId, info.srcUrl]});
+    chrome.tabs.sendMessage(tab.id, {type: 'saveImageFromContext', content: [info.menuItemId, info.srcUrl]});
+  }
+  else if(info.menuItemId === "Create folder"){
+    chrome.tabs.sendMessage(tab.id, {type: 'createFolderFromContext', content: [info.srcUrl]});
   }
   return true;
 });
 
 chrome.runtime.onInstalled.addListener(() => {
+  chrome.contextMenus.create({
+    id: 'Create folder',
+    title: "Create folder with this image",
+    contexts: ['image'],
+  });
+
   chrome.contextMenus.create({
     id: 'Take image',
     title: "Import image in",

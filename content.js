@@ -28,7 +28,7 @@ async function isInStorageForContext(valToAdd){
 }
 
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
-  if(message.type === 'saveImageForContext'){
+  if(message.type === 'saveImageFromContext'){
     divId = message.content[0];
     result = message.content[1];
     filename = "catturata";
@@ -100,6 +100,86 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
     }  
 
     return canvases;
+  }
+  else if(message.type === 'createFolderFromContext'){
+    let face;
+    let divId;
+    let noDetection = false;
+    let moreDetections = false;
+
+    const imageLoadPromise = new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = message.content[0];
+    });
+    try {
+      await imageLoadPromise.then(async (img) => {
+        const detections = await faceapi.detectAllFaces(img);
+        if(detections.length === 1){
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d', {willReadFrequently: true});
+          canvas.width = img.width;
+          canvas.height = img.height;
+          context.drawImage(img,
+            detections[0].box.x,
+            detections[0].box.y,
+            detections[0].box.width,
+            detections[0].box.height,
+            0, 0, img.width, img.height
+          );
+          face = canvas.toDataURL('image/jpeg');
+          divId = new Date().getTime();
+          const inputValue = "Empty folder";
+          const bTextContent = "On";
+          const bClassName = "btn btn-success";
+          chrome.storage.local.set({["folder"+divId]: [face, inputValue, bTextContent, bClassName]});
+          canvas.remove();
+        }
+        else if(detection.length === 0){
+          noDetection = true;
+        }
+        else if(detections.length > 1){
+          moreDetections = true;
+        }
+      }).then(() => {
+        if(noDetection){
+          chrome.runtime.sendMessage({type: 'noDetection', content: filename}, (response) => {
+            if(response){
+              console.log("Ok");
+            }
+          });
+        }
+        else if(moreDetections){
+          chrome.runtime.sendMessage({type: 'moreDetections', content: filename}, (response) => {
+            if(response){
+              console.log("Ok");
+            }
+          });
+        }
+        else{
+          chrome.runtime.sendMessage({type: 'addedFolderForContext', content: 'folder'+divId}, (response) => {
+            if(response === true){
+              console.log("Cartella aggiunta");
+              chrome.runtime.sendMessage({type: 'addedFolderFromContext'}, (response) => {
+                if(response === true){
+                  console.log("Ok");
+                }
+                else{
+                  console.log("No");
+                }
+              });
+            }
+            else{
+              console.log("Errore nell'aggiunta della cartella");
+            }
+          });
+        }
+      })
+    } catch (error) {
+      console.error(error);
+    }  
+    return face;
   }
 });
 

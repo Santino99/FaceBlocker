@@ -221,6 +221,7 @@ async function setModels(){
   else if(Object.values(model)[0] === "tiny"){
     biggerModelButton.classList.remove('active');
     tinyModelButton.classList.add('active')
+
   }
   else if(Object.values(model)[0] === "bigger"){
     tinyModelButton.classList.remove('active');
