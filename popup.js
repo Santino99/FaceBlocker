@@ -2,6 +2,8 @@ const noFolder = document.getElementById('noFolder');
 const noImages = document.getElementById('noImages');
 const tinyModelButton = document.getElementById('tiny-model');
 const biggerModelButton = document.getElementById('bigger-model'); 
+const onButton = document.getElementById('on-button');
+const offButton = document.getElementById('off-button'); 
 
 async function loadModels() {
   await faceapi.nets.ssdMobilenetv1.loadFromUri('node_modules/@vladmandic/face-api/model');
@@ -229,6 +231,23 @@ async function setModels(){
   }
 }
 
+function updateButtonCardFolder(key, mode){
+  div = document.getElementById(key);
+  button = div.childNodes[1].childNodes[2];
+  if(mode === "On"){
+    button.classList.remove("btn-danger");
+    button.classList.add("btn-success");
+    button.innerText = mode;
+    console.log(button)
+  }
+  else if(mode === "Off"){
+    button.classList.add("btn-danger");
+    button.classList.remove("btn-success");
+    button.innerText = mode;
+    console.log(button)
+  }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   //const addFolder = document.getElementById('add-button');
   setModels();
@@ -308,34 +327,13 @@ document.addEventListener('DOMContentLoaded', function() {
   chooseFaceFolder.addEventListener('change', change);
   uploadFaceFolder.addEventListener('click', click);
 
-  /*addFolder.addEventListener('click', () => {
-    const divId = new Date().getTime();
-    const imgSrc = "folder.png";
-
-    const inputValue = "Empty folder";
-    const bTextContent = "On";
-    const bClassName = "btn btn-success";
-    constructCardFolder("folder"+divId, imgSrc, inputValue, bTextContent, bClassName).then(() => {
-      chrome.storage.local.set({["folder"+divId]: [imgSrc, inputValue, bTextContent, bClassName]});
-    });
-    chrome.runtime.sendMessage({type: 'addedFolderForContext', content: 'folder'+divId}, (response) => {
-      if(response === true){
-        console.log("Cartella aggiunta");
-        noFolder.setAttribute('hidden','hidden')
-      }
-      else{
-        console.log("Errore nell'aggiunta della cartella");
-      }
-    });
-  });*/
-
   tinyModelButton.addEventListener('click', () => {
     if(biggerModelButton.classList.contains('active')){
       biggerModelButton.classList.remove('active');
       tinyModelButton.classList.add('active')
       chrome.storage.local.set({"activeModel": 'tiny'})
     }
-  })
+  });
 
   biggerModelButton.addEventListener('click', () => {
     if(tinyModelButton.classList.contains('active')){
@@ -343,7 +341,31 @@ document.addEventListener('DOMContentLoaded', function() {
       biggerModelButton.classList.add('active')
       chrome.storage.local.set({"activeModel": 'bigger'})
     }
-  })
+  });
+
+  onButton.addEventListener('click', () => {
+    chrome.storage.local.get().then((all) => {
+      for (const [key, val] of Object.entries(all)){
+        if(key.startsWith('folder')){
+          chrome.storage.local.set({[key]: [val[0], val[1], "On", "btn btn-success"]}).then(() => {
+            updateButtonCardFolder(key, "On");
+          });
+        }
+      }
+    })
+  });
+
+  offButton.addEventListener('click', () => {
+    chrome.storage.local.get().then((all) => {
+      for (const [key, val] of Object.entries(all)){
+        if(key.startsWith('folder')){
+          chrome.storage.local.set({[key]: [val[0], val[1], "Off", "btn btn-danger"]}).then(() => {
+            updateButtonCardFolder(key, "Off");
+          });
+        }
+      }
+    })
+  });
 
   thereIsFolders().then((response) => {
     if(response){

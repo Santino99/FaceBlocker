@@ -6,12 +6,32 @@
   </head>
   <body>
     <div id="folders-area" class="container">
-      <div id="button-area" class="row justify-content-around" style="margin: 0;">
-        <div class="col-4">
-          <button type="button" id="tiny-model" class="active btn btn-primary btn3d">Tiny Model</button>
+      <div class="row justify-content-around">
+        <div class="card col-6">
+          <div id="models">
+            <h1>Models</h1>
+          </div>
+          <div id="button-area" class="row justify-content-center">
+            <div class="col-5">
+              <button type="button" id="tiny-model" class="active btn btn-primary btn3d">Tiny</button>
+            </div>
+            <div class="col-5">
+              <button type="button" id="bigger-model" class="btn btn-primary btn3d">Big</button>
+            </div>
+          </div>
         </div>
-        <div class="col-4">
-          <button type="button" id="bigger-model" class="btn btn-primary btn3d">Big Model</button>
+        <div class="card col-6">
+          <div id="detection">
+            <h1>Detection</h1>
+          </div>
+          <div id="button-area" class="row justify-content-center">
+            <div class="col-5">
+              <button type="button" id="on-button" class="btn btn-success btn3d">On</button>
+            </div>
+            <div class="col-5">
+              <button type="button" id="off-button" class="btn btn-danger btn3d">Off</button>
+            </div>
+          </div>
         </div>
       </div>
       <hr>
@@ -33,6 +53,7 @@
 
     <div id="drop-area" hidden>
       <i id="backwards" class="fa fa-arrow-left"></i>
+      <hr>
       <div id="drop-zone">
         <span class="icon">
           <i id="upload-face" class="fa-solid fa-file-arrow-up"></i>
@@ -40,6 +61,7 @@
         <span class="text">Trascina qui le tue immagini o clicca per selezionarle. I volti rilevati verranno visualizzati sotto</span>
         <input id="choose-face" type="file" accept="image/*" multiple>
       </div>
+      <hr>
       <div id="noImages" class="justify-content-center">
         <h2>Nessuna Immagine Presente</h2>
       </div>
