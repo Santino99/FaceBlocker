@@ -5,10 +5,29 @@ html{
 
 body {
     padding: 20px 10px 10px 10px;
+    height: 100%;
+}
+
+#first-div{
+    width: 100%;
+    z-index: 0;
 }
 
 #folders-area {
     padding: 0;
+}
+
+#loading{
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    right: 0px;
+    bottom: 0px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+    background:rgba(255,255,255,0.8);
 }
 
 #button-area{
@@ -75,6 +94,7 @@ input[type="file"] {
     display: flex;
     flex-wrap: wrap;
     margin-top: 10px;
+    padding-bottom: 10px;
     width: 450px;
 }
   
@@ -128,7 +148,6 @@ input[type="file"] {
 #tiny-model:active:focus, #bigger-model:active:focus,
 #tiny-model:focus:hover, #bigger-model:focus:hover,
 #tiny-model:focus, #bigger-model:focus{
-	-moz-outline-style: none;
 	outline: medium none;
 }
 

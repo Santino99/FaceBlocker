@@ -4,6 +4,7 @@ const tinyModelButton = document.getElementById('tiny-model');
 const biggerModelButton = document.getElementById('bigger-model'); 
 const onButton = document.getElementById('on-button');
 const offButton = document.getElementById('off-button'); 
+const loadingDiv = document.getElementById('loading');
 
 async function loadModels() {
   await faceapi.nets.ssdMobilenetv1.loadFromUri('node_modules/@vladmandic/face-api/model');
@@ -35,13 +36,13 @@ async function thereIsImages(divId){
 }
 
 async function addImageToStorage(divId, image, filename){
-  //const iconBackwards = document.getElementsByTagName('i')[0];
- // iconBackwards.disabled = true;
   await detectFace(divId, image, filename).then((res) => {
     for(const r of res){
       constructDivImage(divId, r);
     }
-  });//.then(iconBackwards.disabled = false);
+  }).then(() => {
+    loadingDiv.setAttribute('hidden', 'hidden');
+  });
 }
 
 function areTheSameDescriptors(descriptors1, descriptors2){
@@ -65,7 +66,7 @@ async function isInStorage(valToAdd){
   return false;
 }
 
-async function detectFaceForFolders(result){
+async function detectFaceForFolders(result, filename){
   let face;
   let noDetection = false;
   let moreDetections = false;
@@ -79,6 +80,7 @@ async function detectFaceForFolders(result){
   try {
     await imageLoadPromise.then(async (img) => {
       const detections = await faceapi.detectAllFaces(img);
+      console.log(detections)
       if(detections.length === 1){
         const canvas = document.createElement('canvas');
         const context = canvas.getContext('2d', {willReadFrequently: true});
@@ -94,7 +96,7 @@ async function detectFaceForFolders(result){
         face = canvas.toDataURL('image/jpeg');
         canvas.remove();
       }
-      else if(detection.length === 0){
+      else if(detections.length === 0){
         noDetection = true;
       }
       else if(detections.length > 1){
@@ -249,7 +251,6 @@ function updateButtonCardFolder(key, mode){
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-  //const addFolder = document.getElementById('add-button');
   setModels();
 
   const dropZoneFolders = document.getElementById('drop-zone-folders');
@@ -264,57 +265,72 @@ document.addEventListener('DOMContentLoaded', function() {
     event.preventDefault();
     dropZoneFolders.classList.remove('dragover');
     const files = event.dataTransfer.files;
-    const reader = new FileReader();
-    reader.readAsDataURL(files[0]);
-    reader.onload = () => {
-      detectFaceForFolders(reader.result).then((face) => {
-        const divId = new Date().getTime();
-        const imgSrc = face;
-
-        const inputValue = "Empty folder";
-        const bTextContent = "On";
-        const bClassName = "btn btn-success";
-        constructCardFolder("folder"+divId, imgSrc, inputValue, bTextContent, bClassName).then(() => {
-          chrome.storage.local.set({["folder"+divId]: [imgSrc, inputValue, bTextContent, bClassName]});
-        });
-        chrome.runtime.sendMessage({type: 'addedFolderForContext', content: 'folder'+divId}, (response) => {
-          if(response === true){
-            console.log("Cartella aggiunta");
-            noFolder.setAttribute('hidden','hidden')
+    for (const file of files) {
+      loadingDiv.removeAttribute('hidden');
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        detectFaceForFolders(reader.result, file.name).then((face) => {
+          if(face !== undefined){
+            const divId = new Date().getTime();
+            const imgSrc = face;
+            const inputValue = "Empty folder";
+            const bTextContent = "On";
+            const bClassName = "btn btn-success";
+            constructCardFolder("folder"+divId, imgSrc, inputValue, bTextContent, bClassName).then(() => {
+              chrome.storage.local.set({["folder"+divId]: [imgSrc, inputValue, bTextContent, bClassName]});
+            });
+            chrome.runtime.sendMessage({type: 'addedFolderForContext', content: 'folder'+divId}, (response) => {
+              if(response === true){
+                console.log("Cartella aggiunta");
+                noFolder.setAttribute('hidden','hidden');
+              }
+              else{
+                console.log("Errore nell'aggiunta della cartella");
+              }
+            });
           }
-          else{
-            console.log("Errore nell'aggiunta della cartella");
-          }
+        }).then(() => {
+          loadingDiv.setAttribute('hidden','hidden');
         });
-      });
+      }
     }
   };
 
   change = function(){
     const files = chooseFaceFolder.files;
-    const reader = new FileReader();
-    reader.readAsDataURL(files[0]);
-    reader.onload = () => {
-      detectFaceForFolders(reader.result).then((face) => {
-        const divId = new Date().getTime();
-        const imgSrc = face;
+    for (const file of files) {
+      loadingDiv.removeAttribute('hidden');
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        detectFaceForFolders(reader.result, file.name).then((face) => {
+          if(face !== undefined){
+            const divId = new Date().getTime();
+            const imgSrc = face;
 
-        const inputValue = "Empty folder";
-        const bTextContent = "On";
-        const bClassName = "btn btn-success";
-        constructCardFolder("folder"+divId, imgSrc, inputValue, bTextContent, bClassName).then(() => {
-          chrome.storage.local.set({["folder"+divId]: [imgSrc, inputValue, bTextContent, bClassName]});
-        });
-        chrome.runtime.sendMessage({type: 'addedFolderForContext', content: 'folder'+divId}, (response) => {
-          if(response === true){
-            console.log("Cartella aggiunta");
-            noFolder.setAttribute('hidden','hidden')
+            const inputValue = "Empty folder";
+            const bTextContent = "On";
+            const bClassName = "btn btn-success";
+            constructCardFolder("folder"+divId, imgSrc, inputValue, bTextContent, bClassName).then(() => {
+              chrome.storage.local.set({["folder"+divId]: [imgSrc, inputValue, bTextContent, bClassName]});
+            });
+            chrome.runtime.sendMessage({type: 'addedFolderForContext', content: 'folder'+divId}, (response) => {
+              if(response === true){
+                console.log("Cartella aggiunta");
+                loadingDiv.setAttribute('hidden','hidden');
+                noFolder.setAttribute('hidden','hidden');
+              }
+              else{
+                loadingDiv.setAttribute('hidden','hidden');
+                console.log("Errore nell'aggiunta della cartella");
+              }
+            });
           }
-          else{
-            console.log("Errore nell'aggiunta della cartella");
-          }
-        });
-      });
+        }).then(() => {
+          loadingDiv.setAttribute('hidden','hidden');
+        });;
+      }
     }
   };
 
@@ -392,11 +408,12 @@ async function initializeDropAreaListeners(divId){
     event.preventDefault();
     dropZone.classList.remove('dragover');
     const files = event.dataTransfer.files;
+    loadingDiv.removeAttribute('hidden');
     for (const file of files) {
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = () => {
-        noImages.setAttribute('hidden','hidden')
+        noImages.setAttribute('hidden','hidden');
         addImageToStorage(divId, reader.result, file.name);
       }
     }
@@ -404,11 +421,12 @@ async function initializeDropAreaListeners(divId){
 
   change = function(){
     const files = fileInput.files;
+    loadingDiv.removeAttribute('hidden');
     for (const file of files) {
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = () => {
-        noImages.setAttribute('hidden','hidden')
+        noImages.setAttribute('hidden','hidden');
         addImageToStorage(divId, reader.result, file.name);
       }
     }
@@ -450,6 +468,7 @@ async function constructCardFolder(divId, imgSrc, inputValue, bTextContent, bCla
 
   const img = new Image();
   img.className = "card-img-top";
+  img.draggable = false;
   img.src = imgSrc;
   img.style.width = '150px';
   img.style.height = '150px';
@@ -581,6 +600,7 @@ function constructDivImage(divId, photo){
 
   const img = new Image();
   img.src = photo;
+  img.draggable = false;
   img.style.transition = '.3s ease';
 
   const x_div = document.createElement('div');

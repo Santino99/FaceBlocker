@@ -5,69 +5,79 @@
     <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.min.css">
   </head>
   <body>
-    <div id="folders-area" class="container">
-      <div class="row justify-content-around">
-        <div class="card col-6">
-          <div id="models">
-            <h1>Models</h1>
-          </div>
-          <div id="button-area" class="row justify-content-center">
-            <div class="col-5">
-              <button type="button" id="tiny-model" class="active btn btn-primary btn3d">Tiny</button>
+    <div id="first-div">
+
+      <div id="folders-area" class="container">
+        <div class="row justify-content-around">
+          <div class="card col-6">
+            <div id="models">
+              <h1>Models</h1>
             </div>
-            <div class="col-5">
-              <button type="button" id="bigger-model" class="btn btn-primary btn3d">Big</button>
+            <div id="button-area" class="row justify-content-center">
+              <div class="col-5">
+                <button type="button" id="tiny-model" class="active btn btn-primary btn3d">Tiny</button>
+              </div>
+              <div class="col-5">
+                <button type="button" id="bigger-model" class="btn btn-primary btn3d">Big</button>
+              </div>
+            </div>
+          </div>
+          <div class="card col-6">
+            <div id="detection">
+              <h1>Detection</h1>
+            </div>
+            <div id="button-area" class="row justify-content-center">
+              <div class="col-5">
+                <button type="button" id="on-button" class="btn btn-success btn3d">On</button>
+              </div>
+              <div class="col-5">
+                <button type="button" id="off-button" class="btn btn-danger btn3d">Off</button>
+              </div>
             </div>
           </div>
         </div>
-        <div class="card col-6">
-          <div id="detection">
-            <h1>Detection</h1>
-          </div>
-          <div id="button-area" class="row justify-content-center">
-            <div class="col-5">
-              <button type="button" id="on-button" class="btn btn-success btn3d">On</button>
-            </div>
-            <div class="col-5">
-              <button type="button" id="off-button" class="btn btn-danger btn3d">Off</button>
-            </div>
+
+        <hr>
+
+        <div id="drop-area-folders">
+          <div id="drop-zone-folders">
+            <span class="icon">
+              <i id="upload-face-folder"class="fa-solid fa-file-arrow-up"></i>
+            </span>
+            <span class="text">Carica l'immagine di una persona per creare una cartella</span>
+            <input id="choose-face-folder" type="file" accept="image/*">
           </div>
         </div>
+        <hr>
+        <div id="noFolder" class="justify-content-center">
+          <h2>Nessuna Cartella Presente</h2>
+        </div>
+        <div class="preview"></div>
       </div>
-      <hr>
-      <div id="drop-area-folders">
-        <div id="drop-zone-folders">
+
+      <div id="drop-area" hidden>
+        <i id="backwards" class="fa fa-arrow-left"></i>
+        <hr>
+        <div id="drop-zone">
           <span class="icon">
-            <i id="upload-face-folder"class="fa-solid fa-file-arrow-up"></i>
+            <i id="upload-face" class="fa-solid fa-file-arrow-up"></i>
           </span>
-          <span class="text">Carica l'immagine di una persona per creare una cartella</span>
-          <input id="choose-face-folder" type="file" accept="image/*">
+          <span class="text">Trascina qui le tue immagini o clicca per selezionarle. I volti rilevati verranno visualizzati sotto</span>
+          <input id="choose-face" type="file" accept="image/*" multiple>
         </div>
+        <hr>
+        <div id="noImages" class="justify-content-center">
+          <h2>Nessuna Immagine Presente</h2>
+        </div>
+        <div class="preview"></div>
       </div>
-      <hr>
-      <div id="noFolder" class="justify-content-center">
-        <h2>Nessuna Cartella Presente</h2>
-      </div>
-      <div class="preview"></div>
     </div>
 
-    <div id="drop-area" hidden>
-      <i id="backwards" class="fa fa-arrow-left"></i>
-      <hr>
-      <div id="drop-zone">
-        <span class="icon">
-          <i id="upload-face" class="fa-solid fa-file-arrow-up"></i>
-        </span>
-        <span class="text">Trascina qui le tue immagini o clicca per selezionarle. I volti rilevati verranno visualizzati sotto</span>
-        <input id="choose-face" type="file" accept="image/*" multiple>
+    <div id="loading" class="text-center" hidden>
+      <div class="spinner-border" role="status">
+        <span class="visually-hidden">Loading...</span>
       </div>
-      <hr>
-      <div id="noImages" class="justify-content-center">
-        <h2>Nessuna Immagine Presente</h2>
-      </div>
-      <div class="preview"></div>
     </div>
-    
     <script src="node_modules/@vladmandic/face-api/dist/face-api.js"></script>
     <script src="popup.js"></script>
   </body>

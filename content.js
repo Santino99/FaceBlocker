@@ -188,11 +188,39 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   }
 });
 
-async function obscure(img) {
-  img.src = chrome.runtime.getURL('icon.png');
-  img.srcset = chrome.runtime.getURL('icon.png');
-  //img.style.opacity = 0.1
-  img.parentNode.insertBefore(img, img.parentNode.firstChild);
+function getAveragedColor(bitmap) {
+  let sum = 0;
+  for (let i = 0; i < bitmap.data.length; i += 4) {
+      const r = bitmap.data[i];
+      const g = bitmap.data[i + 1];
+      const b = bitmap.data[i + 2];
+      const greyscale = 0.2989 * r + 0.5870 * g + 0.1140 * b;
+      sum += greyscale;
+  }
+  return Math.round(sum / (bitmap.data.length / 4));
+}
+
+async function obscure(detection, image) {
+  image.src = chrome.runtime.getURL('icon.png');
+  image.srcset = chrome.runtime.getURL('icon.png');
+  image.parentNode.insertBefore(img, img.parentNode.firstChild);
+  /*const canvas = document.createElement('canvas');
+  canvas.width = image.width;
+  canvas.height = image.height;
+  const ctx = canvas.getContext('2d',  { willReadFrequently: true });
+  ctx.drawImage(image, 0, 0, image.width, image.height);
+  const blockSize = (detection.detection._box._width + 35) / 6;
+  for (let y = detection.detection._box._y - 60; y < detection.detection._box._y + detection.detection._box._height; y += blockSize) {
+      for (let x = detection.detection._box._x - 15; x < detection.detection._box._x + detection.detection._box._width + 20; x += blockSize) {
+        const imageData = ctx.getImageData(x, y, blockSize, blockSize)
+        const average = getAveragedColor(imageData)
+        ctx.fillStyle = `rgb(${average},${average},${average})`
+        ctx.fillRect(x, y, blockSize, blockSize)
+      }
+  }
+  image.src = canvas.toDataURL('image/jpg');
+  image.srcset = canvas.toDataURL('image/jpg');
+  image.parentNode.insertBefore(image, image.parentNode.firstChild);*/
 }
 
 async function startBlocking(all, image){
@@ -206,6 +234,7 @@ async function startBlocking(all, image){
     });
     try {
       await imageLoadPromise.then(async (img) => {
+        let detections;
         if(Object.values(model)[0] === 'tiny'){
           detections = await faceapi.detectAllFaces(img, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptors();
         }
@@ -214,19 +243,15 @@ async function startBlocking(all, image){
         }
         for(const detection of detections){
           if(detection){
-              //console.log(detection);
-              //console.log(img1);
               for (const val of all){ 
                 descriptor2 = new Float32Array(Object.values(JSON.parse(val)));
                 const distance = await faceapi.euclideanDistance(detection.descriptor, descriptor2);
                 if(distance <= 0.6){
-                  await obscure(image)
-                  //console.log("Sono la stessa persona");
+                  await obscure(detection, image)
                 }
                 else{
-                 // console.log("Non sono la stessa persona");
+                   console.log("Non sono la stessa persona");
                 }
-                //console.log(distance);
               }
           }
         }
