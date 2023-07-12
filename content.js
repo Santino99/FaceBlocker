@@ -220,9 +220,9 @@ async function startBlocking(all, image){
               for (const val of all){ 
                 descriptor2 = new Float32Array(Object.values(JSON.parse(val)));
                 const distance = await faceapi.euclideanDistance(detection.descriptor, descriptor2);
-                //if(distance <= 0.6){
+                if(distance <= 0.6){
                   obscure(image)
-                //}
+                }
                 /*else{
                    console.log("Non sono la stessa persona");
                 }*/
@@ -262,23 +262,9 @@ chrome.runtime.sendMessage({type: 'getSavedImages'}, (response) => {
         console.log(mutation)
         imagesToAdd = [];
         mutation.added.forEach((node) => {
-          //if(node.nodeType === Node.ELEMENT_NODE){
-            //if(node.shadowRoot){
-              //const shadowRoot = node.shadowRoot;
-              //shadowRoot.querySelectorAll('img').forEach(image => {
-                node.onload = function(){
-                  intersectionObserver.observe(node);
-                }
-              //});
-            //}
-            //else{
-              //node.querySelectorAll('img').forEach(image => {
-                //image.onload = function(){
-                  //intersectionObserver.observe(image);
-                //}
-              //});
-            //}
-          //}
+          node.onload = function(){
+            intersectionObserver.observe(node);
+          }
         });
       });
     }
