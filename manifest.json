@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "FaceBlocker 2",
+  "name": "FaceBlocker",
   "version": "1.0",
   "description": "Estensione per bloccare le pubblicità contenenti personaggi indesiderati",
   "icons": {
