@@ -35,7 +35,7 @@
       "matches": [
         "<all_urls>"
       ],
-      "run_at": "document_start"
+      "run_at": "document_end"
     }
   ],
   "permissions": [
@@ -44,12 +44,15 @@
     "activeTab",
     "contextMenus",
     "notifications",
-    "unlimitedStorage"
+    "unlimitedStorage",
+    "declarativeNetRequest",
+    "declarativeNetRequestFeedback"
   ],
   "background":{
     "service_worker": "background.js"
   },
   "host_permissions":[
-    "<all_urls>"
+    "http://*/*",
+    "https://*/*"
   ]
 }

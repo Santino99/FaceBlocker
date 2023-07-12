@@ -191,7 +191,7 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
 });
 
 function obscure(image) {
-  image.style.visibility = 'visible';
+  //image.style.visibility = 'visible';
   image.src = chrome.runtime.getURL('icon.png');
   image.srcset = chrome.runtime.getURL('icon.png');
   image.parentNode.insertBefore(image, image.parentNode.firstChild);
@@ -260,7 +260,6 @@ chrome.runtime.sendMessage({type: 'getSavedImages'}, (response) => {
         imagesToAdd = [];
         mutation.added.forEach((node) => {
           node.onload = function(){
-            console.log(node)
             intersectionObserver.observe(node);
           }
         });

@@ -136,6 +136,48 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 });
 
 chrome.runtime.onInstalled.addListener(() => {
+  chrome.declarativeNetRequest.updateDynamicRules({
+    addRules: [
+      {
+        id: 1,
+        priority: 1,
+        action: {
+          type: 'modifyHeaders',
+          responseHeaders: [
+            {
+              header: 'Access-Control-Allow-Origin',
+              operation: 'set',
+              value: '*'
+            }
+          ]
+        },
+        condition: {
+          urlFilter: "https://*/*",
+          resourceTypes: ['image']
+        }
+      },
+      {
+        id: 2,
+        priority: 1,
+        action: {
+          type: 'modifyHeaders',
+          responseHeaders: [
+            {
+              header: 'Access-Control-Allow-Origin',
+              operation: 'set',
+              value: '*'
+            }
+          ]
+        },
+        condition: {
+          urlFilter: "http://*/*",
+          resourceTypes: ['image']
+        }
+      },
+    ],
+    removeRuleIds: [1,2]
+  });
+
   chrome.contextMenus.create({
     id: 'Create folder',
     title: "Create folder with this image",
