@@ -26,8 +26,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   else if(message.type === 'existingImage'){
     chrome.notifications.create({
       type: "basic",
-      title: "Avviso",
-      message: "L'immagine " + message.content + " è già stata aggiunta",
+      title: "Notification",
+      message: "Image " + message.content + " already present",
       iconUrl: chrome.runtime.getURL('icon.png'),
     });
     sendResponse(true);
@@ -36,8 +36,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   else if(message.type === 'addedImage'){
     chrome.notifications.create({
       type: "basic",
-      title: "Avviso",
-      message: "L'immagine " + message.content + " è stata aggiunta correttamente",
+      title: "Notification",
+      message: "Image " + message.content + " added successfully",
       iconUrl: chrome.runtime.getURL('icon.png'),
     })
     sendResponse(true);
@@ -45,8 +45,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   else if(message.type === 'noDetection'){
     chrome.notifications.create({
       type: "basic",
-      title: "Avviso",
-      message: "Nell'immagine " + message.content + " non è presente alcuna faccia",
+      title: "Notification",
+      message: "No face existing in image " + message.content,
       iconUrl: chrome.runtime.getURL('icon.png'),
     })
     sendResponse(true);
@@ -54,8 +54,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   else if(message.type === 'moreDetections'){
     chrome.notifications.create({
       type: "basic",
-      title: "Avviso",
-      message: "Nell'immagine " + message.content + " è presente più di una faccia",
+      title: "Notification",
+      message: "Image " + message.content + " contains more than one face",
       iconUrl: chrome.runtime.getURL('icon.png'),
     })
     sendResponse(true);
@@ -63,8 +63,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   else if(message.type === 'addedFolderFromContext'){
     chrome.notifications.create({
       type: "basic",
-      title: "Avviso",
-      message: "Cartella creata correttamente",
+      title: "Notification",
+      message: "Folder addedd successfully",
       iconUrl: chrome.runtime.getURL('icon.png'),
     })
     sendResponse(true);
@@ -116,9 +116,21 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   console.log(info)
   if(info.menuItemId.startsWith('folder')){
     chrome.tabs.sendMessage(tab.id, {type: 'saveImageFromContext', content: [info.menuItemId, info.srcUrl]});
+    chrome.notifications.create({
+      type: "basic",
+      title: "Notification",
+      message: "Saving current image...",
+      iconUrl: chrome.runtime.getURL('icon.png'),
+    })
   }
   else if(info.menuItemId === "Create folder"){
     chrome.tabs.sendMessage(tab.id, {type: 'createFolderFromContext', content: [info.srcUrl]});
+    chrome.notifications.create({
+      type: "basic",
+      title: "Notification",
+      message: "Creating folder...",
+      iconUrl: chrome.runtime.getURL('icon.png'),
+    })
   }
   return true;
 });

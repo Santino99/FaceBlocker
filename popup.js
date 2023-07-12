@@ -75,6 +75,7 @@ async function detectFaceForFolders(result, filename){
     const img = new Image();
     img.onload = () => resolve(img);
     img.onerror = reject;
+    img.crossOrigin = 'anonymous';
     img.src = result;
   });
   try {
@@ -132,6 +133,7 @@ async function detectFace(divId, result, filename){
     const img = new Image();
     img.onload = () => resolve(img);
     img.onerror = reject;
+    img.crossOrigin = 'anonymous';
     img.src = result;
   });
   try {
@@ -395,7 +397,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 async function initializeDropAreaListeners(divId){
-  const iconBackwards = document.getElementById('backwards')
+  const buttonBack = document.getElementById('back')
   const dropZone = document.getElementById('drop-zone');
   const fileInput = document.getElementById('choose-face');
   const iconUpload = document.getElementById('upload-face');
@@ -441,7 +443,7 @@ async function initializeDropAreaListeners(divId){
   fileInput.addEventListener('change', change);
   iconUpload.addEventListener('click', click);
 
-  iconBackwards.addEventListener('click', () => {
+  buttonBack.addEventListener('click', () => {
     const divFolders = document.getElementById('folders-area');
     const divImages = document.getElementById('drop-area');
 

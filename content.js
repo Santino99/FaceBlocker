@@ -36,7 +36,7 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   if(message.type === 'saveImageFromContext'){
     divId = message.content[0];
     result = message.content[1];
-    filename = "catturata";
+    filename = "captured";
     let canvases = [];
     let noDetection = false;
 
@@ -50,7 +50,6 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
     try {
       await imageLoadPromise.then(async (img) => {
         const detections = await faceapi.detectAllFaces(img).withFaceLandmarks().withFaceDescriptors();
-        console.log(detections)
         if(detections.length > 0){
           for (const detection of detections){
             const canvas = document.createElement('canvas');
@@ -112,10 +111,13 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
     let noDetection = false;
     let moreDetections = false;
 
+    let filename = "captured";
+
     const imageLoadPromise = new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => resolve(img);
       img.onerror = reject;
+      img.crossOrigin = 'anonymous';
       img.src = message.content[0];
     });
     try {
@@ -141,7 +143,7 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
           chrome.storage.local.set({["folder"+divId]: [face, inputValue, bTextContent, bClassName]});
           canvas.remove();
         }
-        else if(detection.length === 0){
+        else if(detections.length === 0){
           noDetection = true;
         }
         else if(detections.length > 1){
@@ -188,39 +190,11 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   }
 });
 
-function getAveragedColor(bitmap) {
-  let sum = 0;
-  for (let i = 0; i < bitmap.data.length; i += 4) {
-      const r = bitmap.data[i];
-      const g = bitmap.data[i + 1];
-      const b = bitmap.data[i + 2];
-      const greyscale = 0.2989 * r + 0.5870 * g + 0.1140 * b;
-      sum += greyscale;
-  }
-  return Math.round(sum / (bitmap.data.length / 4));
-}
-
-async function obscure(detection, image) {
+function obscure(image) {
   image.src = chrome.runtime.getURL('icon.png');
   image.srcset = chrome.runtime.getURL('icon.png');
-  image.parentNode.insertBefore(img, img.parentNode.firstChild);
-  /*const canvas = document.createElement('canvas');
-  canvas.width = image.width;
-  canvas.height = image.height;
-  const ctx = canvas.getContext('2d',  { willReadFrequently: true });
-  ctx.drawImage(image, 0, 0, image.width, image.height);
-  const blockSize = (detection.detection._box._width + 35) / 6;
-  for (let y = detection.detection._box._y - 60; y < detection.detection._box._y + detection.detection._box._height; y += blockSize) {
-      for (let x = detection.detection._box._x - 15; x < detection.detection._box._x + detection.detection._box._width + 20; x += blockSize) {
-        const imageData = ctx.getImageData(x, y, blockSize, blockSize)
-        const average = getAveragedColor(imageData)
-        ctx.fillStyle = `rgb(${average},${average},${average})`
-        ctx.fillRect(x, y, blockSize, blockSize)
-      }
-  }
-  image.src = canvas.toDataURL('image/jpg');
-  image.srcset = canvas.toDataURL('image/jpg');
-  image.parentNode.insertBefore(image, image.parentNode.firstChild);*/
+  image.parentNode.insertBefore(image, image.parentNode.firstChild);
+  image.style.visibility = 'visible';
 }
 
 async function startBlocking(all, image){
@@ -246,12 +220,12 @@ async function startBlocking(all, image){
               for (const val of all){ 
                 descriptor2 = new Float32Array(Object.values(JSON.parse(val)));
                 const distance = await faceapi.euclideanDistance(detection.descriptor, descriptor2);
-                if(distance <= 0.6){
-                  await obscure(detection, image)
-                }
-                else{
+                //if(distance <= 0.6){
+                  obscure(image)
+                //}
+                /*else{
                    console.log("Non sono la stessa persona");
-                }
+                }*/
               }
           }
         }
@@ -265,48 +239,50 @@ async function startBlocking(all, image){
 chrome.runtime.sendMessage({type: 'getSavedImages'}, (response) => {
   loadModels().then(function(){
     foundedImages = document.querySelectorAll('img');
-    const intersectionObserver = new IntersectionObserver(function(entries, observer){
+
+    var intersectionObserver = new IntersectionObserver(function(entries, observer){
       entries.forEach(entry => {
         if(entry.isIntersecting){
-          startBlocking(response, entry.target).then(observer.unobserve(entry.target))
+          startBlocking(response, entry.target).then(observer.unobserve(entry.target));
         }
-      })
-    })
-    foundedImages.forEach((image) => {
-      intersectionObserver.observe(image);
-    })
-
-    const summary = new MutationSummary({
-      callback: handleMutations,
-      observeOwnChanges: true,
-      queries: [{all: true}]
+      });
     });
     
+    foundedImages.forEach((image) => {
+      intersectionObserver.observe(image);
+    });
+
+    var summary = new MutationSummary({
+      callback: handleMutations,
+      queries: [{element: 'img'}]
+    });
+
     function handleMutations(summaries){
       summaries.forEach(mutation => {
+        console.log(mutation)
         imagesToAdd = [];
         mutation.added.forEach((node) => {
-          if(node.nodeType === Node.ELEMENT_NODE){
-            if(node.shadowRoot){
-              const shadowRoot = node.shadowRoot;
-              shadowRoot.querySelectorAll('img').forEach(image => {
-                image.onload = function(){
-                  intersectionObserver.observe(image)
+          //if(node.nodeType === Node.ELEMENT_NODE){
+            //if(node.shadowRoot){
+              //const shadowRoot = node.shadowRoot;
+              //shadowRoot.querySelectorAll('img').forEach(image => {
+                node.onload = function(){
+                  intersectionObserver.observe(node);
                 }
-              })
-            }
-            else{
-              node.querySelectorAll('img').forEach(image => {
-                image.onload = function(){
-                  intersectionObserver.observe(image)
-                }
-              })
-            }
-          }
+              //});
+            //}
+            //else{
+              //node.querySelectorAll('img').forEach(image => {
+                //image.onload = function(){
+                  //intersectionObserver.observe(image);
+                //}
+              //});
+            //}
+          //}
         });
       });
     }
-  })
+  });
 });
 
 
