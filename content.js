@@ -190,7 +190,7 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   }
 });
 
-function obscure(image) {
+async function obscure(image) {
   //image.style.visibility = 'visible';
   image.src = chrome.runtime.getURL('icon.png');
   image.srcset = chrome.runtime.getURL('icon.png');
@@ -205,66 +205,75 @@ async function startBlocking(all, image){
         img1.onerror = reject;
         img1.crossOrigin = 'anonymous'; 
         img1.src = image.src;
+        if(image.hasAttribute('data-src')){
+          img1.src = image.getAttribute('data-src');
+        }
+        if(image.hasAttribute('data-pagespeed-lazy-src')){
+          img1.src = image.getAttribute('data-pagespeed-lazy-src');
+        }
     });
-    try {
-      await imageLoadPromise.then(async (img) => {
-        let detections;
-        if(Object.values(model)[0] === 'tiny'){
-          detections = await faceapi.detectAllFaces(img, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptors();
-        }
-        else if(Object.values(model)[0] === 'bigger'){
-          detections = await faceapi.detectAllFaces(img).withFaceLandmarks().withFaceDescriptors();
-        }
-        for(const detection of detections){
-          if(detection){
-              for (const val of all){ 
-                descriptor2 = new Float32Array(Object.values(JSON.parse(val)));
-                const distance = await faceapi.euclideanDistance(detection.descriptor, descriptor2);
-                if(distance <= 0.6){
-                  obscure(image)
-                }
+    await imageLoadPromise.then(async (img) => {
+      let detections;
+      if(Object.values(model)[0] === 'tiny'){
+        detections = await faceapi.detectAllFaces(img, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptors();
+      }
+      else if(Object.values(model)[0] === 'bigger'){
+        detections = await faceapi.detectAllFaces(img).withFaceLandmarks().withFaceDescriptors();
+      }
+      for(const detection of detections){
+        if(detection){
+            for (const val of all){ 
+              descriptor2 = new Float32Array(Object.values(JSON.parse(val)));
+              const distance = await faceapi.euclideanDistance(detection.descriptor, descriptor2);
+              if(distance <= 0.6){
+                await obscure(image)
               }
-          }
+            }
         }
-      });
-    } catch (error) {
-        //console.error("Immagine con src nullo");
-    }
+      }
+    });
   }
 };
 
 chrome.runtime.sendMessage({type: 'getSavedImages'}, (response) => {
   loadModels().then(function(){
-    foundedImages = document.querySelectorAll('img');
-
     var intersectionObserver = new IntersectionObserver(function(entries, observer){
-      entries.forEach(entry => {
+      entries.forEach(async entry => {
         if(entry.isIntersecting){
-          startBlocking(response, entry.target).then(observer.unobserve(entry.target));
+          await startBlocking(response, entry.target).then(observer.unobserve(entry.target));
         }
       });
     });
     
-    foundedImages.forEach((image) => {
-      intersectionObserver.observe(image);
+    foundedImages = document.querySelectorAll('img').forEach((image) => {
+      //image.onload = function(){
+        intersectionObserver.observe(image);
+        console.log(image)
+      //}
     });
-
-    var summary = new MutationSummary({
-      callback: handleMutations,
-      queries: [{element: 'img'}]
-    });
-
-    function handleMutations(summaries){
-      summaries.forEach(mutation => {
-        console.log(mutation)
-        imagesToAdd = [];
-        mutation.added.forEach((node) => {
-          node.onload = function(){
-            intersectionObserver.observe(node);
+    
+    function handleMutations(mutationsList, observer) {
+      for (let mutation of mutationsList) {
+        if (mutation.type === 'childList') {
+          for (let node of mutation.addedNodes) {
+            if (node instanceof HTMLElement) {
+              const images = node.querySelectorAll('img');
+              for (let image of images) {
+                //image.onload = function(){
+                  intersectionObserver.observe(image);
+                //}
+              }
+            }
           }
-        });
-      });
+        }
+      }
     }
+    const observer = new MutationObserver(handleMutations);
+
+    const targetNode = document.body;
+    const config = {childList: true, subtree: true};
+
+    observer.observe(targetNode, config);
   });
 });
 
