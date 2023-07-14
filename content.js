@@ -6,8 +6,6 @@ async function loadModels() {
   await faceapi.nets.faceLandmark68Net.loadFromUri(chrome.runtime.getURL('node_modules/@vladmandic/face-api/model'));
   await faceapi.nets.faceRecognitionNet.loadFromUri(chrome.runtime.getURL('node_modules/@vladmandic/face-api/model'));
 
-  model = await chrome.storage.local.get("activeModel");
-
   console.log("Modelli caricati con successo 2");
 }
 
@@ -191,7 +189,6 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
 });
 
 async function obscure(image) {
-  //image.style.visibility = 'visible';
   image.src = chrome.runtime.getURL('icon.png');
   image.srcset = chrome.runtime.getURL('icon.png');
   image.parentNode.insertBefore(image, image.parentNode.firstChild);
@@ -214,10 +211,10 @@ async function startBlocking(all, image){
     });
     await imageLoadPromise.then(async (img) => {
       let detections;
-      if(Object.values(model)[0] === 'tiny'){
+      if(model === 'tiny'){
         detections = await faceapi.detectAllFaces(img, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptors();
       }
-      else if(Object.values(model)[0] === 'bigger'){
+      else if(model === 'bigger'){
         detections = await faceapi.detectAllFaces(img).withFaceLandmarks().withFaceDescriptors();
       }
       for(const detection of detections){
@@ -226,7 +223,7 @@ async function startBlocking(all, image){
               descriptor2 = new Float32Array(Object.values(JSON.parse(val)));
               const distance = await faceapi.euclideanDistance(detection.descriptor, descriptor2);
               if(distance <= 0.6){
-                await obscure(image)
+                obscure(image)
               }
             }
         }
@@ -235,21 +232,19 @@ async function startBlocking(all, image){
   }
 };
 
-chrome.runtime.sendMessage({type: 'getSavedImages'}, (response) => {
+chrome.runtime.sendMessage({type: 'getSavedImagesAndModel'}, (response) => {
+  model = response[1];
   loadModels().then(function(){
     var intersectionObserver = new IntersectionObserver(function(entries, observer){
-      entries.forEach(async entry => {
+      entries.forEach(entry => {
         if(entry.isIntersecting){
-          await startBlocking(response, entry.target).then(observer.unobserve(entry.target));
+          startBlocking(response[0], entry.target).then(observer.unobserve(entry.target));
         }
       });
     });
     
-    foundedImages = document.querySelectorAll('img').forEach((image) => {
-      //image.onload = function(){
-        intersectionObserver.observe(image);
-        console.log(image)
-      //}
+    document.querySelectorAll('img').forEach((image) => {
+      intersectionObserver.observe(image);
     });
     
     function handleMutations(mutationsList, observer) {
@@ -257,12 +252,9 @@ chrome.runtime.sendMessage({type: 'getSavedImages'}, (response) => {
         if (mutation.type === 'childList') {
           for (let node of mutation.addedNodes) {
             if (node instanceof HTMLElement) {
-              const images = node.querySelectorAll('img');
-              for (let image of images) {
-                //image.onload = function(){
-                  intersectionObserver.observe(image);
-                //}
-              }
+              node.querySelectorAll('img').forEach((image) => {
+                intersectionObserver.observe(image);
+              });
             }
           }
         }

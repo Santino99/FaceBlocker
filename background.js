@@ -1,10 +1,14 @@
 // VEDERE PER IL FATTO DEL ICON BACKWARDS
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if(message.type === 'getSavedImages'){
+  if(message.type === 'getSavedImagesAndModel'){
     let divs = [];
     let images = [];
+    let model;
     chrome.storage.local.get().then((all) => {
       for (const [key, val] of Object.entries(all)){
+        if(key.startsWith('activeModel')){
+          model = val;
+        }
         if(key.startsWith('folder')){
           if(val[2] === "On"){
             divs.push(key);
@@ -18,8 +22,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           }
         }
       }
-      return images;
-    }).then(sendResponse)
+      return [images, model];
+    }).then(sendResponse);
 
     return true;
   }

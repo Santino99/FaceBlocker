@@ -30,9 +30,16 @@ body {
     background:rgba(255,255,255,0.8);
 }
 
-#button-area{
+#mode-area{
     margin: 0; 
-    position: relative; 
+    position: relative;
+    right: 10px; 
+    bottom: 20px;
+}
+
+#detection-area{
+    margin: 0; 
+    position: relative;
     bottom: 20px;
 }
 
@@ -116,7 +123,7 @@ input[type="file"] {
     display: inline-block;
     position: relative;
     bottom: 20px;
-    width: 130px;
+    width: 110px;
     background-color: #FFF;
     font-size: 33px;
     font-weight: bold;
