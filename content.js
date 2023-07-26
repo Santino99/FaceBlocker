@@ -192,13 +192,13 @@ async function obscure(image) {
   image.src = chrome.runtime.getURL('icon.png');
   image.srcset = chrome.runtime.getURL('icon.png');
   image.parentNode.insertBefore(image, image.parentNode.firstChild);
+  image.removeAttribute('data-original');
 }
 
 async function startBlocking(all, image){
   if(image.src !== null){
     const imageLoadPromise = new Promise((resolve, reject) => {
         const img1 = new Image();
-        img1.onload = () => resolve(img1);
         img1.onerror = reject;
         img1.crossOrigin = 'anonymous'; 
         img1.src = image.src;
@@ -208,6 +208,10 @@ async function startBlocking(all, image){
         if(image.hasAttribute('data-pagespeed-lazy-src')){
           img1.src = image.getAttribute('data-pagespeed-lazy-src');
         }
+        if(image.hasAttribute('data-original')){
+          img1.src = image.getAttribute('data-original');
+        }
+        img1.onload = () => resolve(img1);
     });
     await imageLoadPromise.then(async (img) => {
       let detections;
@@ -238,7 +242,7 @@ chrome.runtime.sendMessage({type: 'getSavedImagesAndModel'}, (response) => {
     var intersectionObserver = new IntersectionObserver(function(entries, observer){
       entries.forEach(entry => {
         if(entry.isIntersecting){
-          startBlocking(response[0], entry.target).then(observer.unobserve(entry.target));
+          startBlocking(response[0], entry.target).then(() => observer.unobserve(entry.target));
         }
       });
     });
@@ -252,9 +256,16 @@ chrome.runtime.sendMessage({type: 'getSavedImagesAndModel'}, (response) => {
         if (mutation.type === 'childList') {
           for (let node of mutation.addedNodes) {
             if (node instanceof HTMLElement) {
-              node.querySelectorAll('img').forEach((image) => {
-                intersectionObserver.observe(image);
-              });
+              if(node.tagName === 'IMG'){
+                intersectionObserver.observe(node)
+              }
+              else{
+                node.querySelectorAll('img').forEach((image) => {
+                  image.onload = function(){
+                    intersectionObserver.observe(image)
+                  }
+                });
+              }
             }
           }
         }

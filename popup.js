@@ -284,8 +284,15 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             chrome.runtime.sendMessage({type: 'addedFolderForContext', content: 'folder'+divId}, (response) => {
               if(response === true){
-                console.log("Cartella aggiunta");
-                noFolder.setAttribute('hidden','hidden');
+                chrome.runtime.sendMessage({type: 'addedFolderFromContext'}, (response) => {
+                  if(response === true){
+                    console.log("Cartella aggiunta");
+                    noFolder.setAttribute('hidden','hidden');
+                  }
+                  else{
+                    console.log("Errore nell'aggiunta della cartella");
+                  }
+                });
               }
               else{
                 console.log("Errore nell'aggiunta della cartella");
@@ -319,9 +326,17 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             chrome.runtime.sendMessage({type: 'addedFolderForContext', content: 'folder'+divId}, (response) => {
               if(response === true){
-                console.log("Cartella aggiunta");
-                loadingDiv.setAttribute('hidden','hidden');
-                noFolder.setAttribute('hidden','hidden');
+                chrome.runtime.sendMessage({type: 'addedFolderFromContext'}, (response) => {
+                  if(response === true){
+                    console.log("Cartella aggiunta");
+                    loadingDiv.setAttribute('hidden','hidden');
+                    noFolder.setAttribute('hidden','hidden');
+                  }
+                  else{
+                    loadingDiv.setAttribute('hidden','hidden');
+                    console.log("Errore nell'aggiunta della cartella");
+                  }
+                });
               }
               else{
                 loadingDiv.setAttribute('hidden','hidden');
