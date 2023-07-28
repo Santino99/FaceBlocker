@@ -30,8 +30,62 @@ async function isInStorageForContext(valToAdd){
   return false;
 }
 
+function startOverlay(src){
+  if(src !== "chrome-extension://agcajemoakhfgjfjbcbfbdlmjpemdpjb/icon.png"){
+    const imgElement = document.querySelector(`img[src="${src}"]`)
+    
+    const div1 = document.createElement('div');
+    div1.className = 'text-center';
+    div1.style.width = '100%';
+    div1.style.height = '100%';
+    div1.style.position = 'absolute';
+    div1.style.right = '0px';
+    div1.style.bottom = '0px';
+    div1.style.display = 'flex';
+    div1.style.alignItems = 'center';
+    div1.style.justifyContent = 'center';
+    div1.style.zIndex = 1;
+    div1.style.background = 'rgba(255,255,255,0.8)';
+
+    const div2 = document.createElement('div');
+    div2.className = 'spinner-border';
+    div2.role = 'status';
+
+    const span = document.createElement('span');
+    span.className = 'visually-hidden';
+
+    div2.appendChild(span);
+    div1.appendChild(div2);
+
+    imgElement.parentElement.appendChild(div1);
+    console.log(imgElement)
+  }
+}
+
+function stopOverlay(src, mode){
+  if(src !== "chrome-extension://agcajemoakhfgjfjbcbfbdlmjpemdpjb/icon.png"){
+    const imgElement = document.querySelector(`img[src="${src}"]`)
+    const div = imgElement.nextElementSibling;
+    div.childNodes[0].remove();
+    const checkImage = new Image();
+    checkImage.style.width = "60px";
+    checkImage.style.height = "60px";
+    if(mode === "Ok"){
+      checkImage.src = chrome.runtime.getURL('check.png');
+    }
+    else if(mode === "No"){
+      checkImage.src = chrome.runtime.getURL('cross.png');
+    }
+    div.appendChild(checkImage);
+    setTimeout(() => {
+      div.remove();
+    }, 3000);
+  }
+}
+
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   if(message.type === 'saveImageFromContext'){
+    startOverlay(message.content[1]);
     divId = message.content[0];
     result = message.content[1];
     filename = "captured";
@@ -79,6 +133,7 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
           chrome.runtime.sendMessage({type: 'addedImage', content: filename}, (response) => {
             if(response){
               console.log("Ok");
+              stopOverlay(message.content[1], "Ok");
             }
           });
         }
@@ -86,6 +141,7 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
           chrome.runtime.sendMessage({type: 'noDetection', content: filename}, (response) => {
             if(response){
               console.log("Ok");
+              stopOverlay(message.content[1], "No");
             }
           });
         }
@@ -93,6 +149,7 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
           chrome.runtime.sendMessage({type: 'existingImage', content: filename}, (response) => {
             if(response){
               console.log("Ok");
+              stopOverlay(message.content[1], "No");
             }
           });
         }
@@ -104,6 +161,7 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
     return canvases;
   }
   else if(message.type === 'createFolderFromContext'){
+    startOverlay(message.content[0]);
     let face;
     let divId;
     let noDetection = false;
@@ -151,20 +209,23 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
         if(noDetection){
           chrome.runtime.sendMessage({type: 'noDetection', content: filename}, (response) => {
             if(response){
-              console.log("Ok");
+              console.log("No");
+              stopOverlay(message.content[0], "No");
             }
           });
         }
         else if(moreDetections){
           chrome.runtime.sendMessage({type: 'moreDetections', content: filename}, (response) => {
             if(response){
-              console.log("Ok");
+              console.log("No");
+              stopOverlay(message.content[0], "No");
             }
           });
         }
         else{
           chrome.runtime.sendMessage({type: 'addedFolderForContext', content: 'folder'+divId}, (response) => {
             if(response === true){
+              stopOverlay(message.content[0], "Ok");
               console.log("Cartella aggiunta");
               chrome.runtime.sendMessage({type: 'addedFolderFromContext'}, (response) => {
                 if(response === true){

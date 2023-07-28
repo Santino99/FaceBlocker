@@ -68,7 +68,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     chrome.notifications.create({
       type: "basic",
       title: "Notification",
-      message: "Folder addedd successfully",
+      message: "Folder added successfully",
       iconUrl: chrome.runtime.getURL('icon.png'),
     })
     sendResponse(true);
@@ -117,24 +117,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
-  console.log(info)
   if(info.menuItemId.startsWith('folder')){
     chrome.tabs.sendMessage(tab.id, {type: 'saveImageFromContext', content: [info.menuItemId, info.srcUrl]});
-    chrome.notifications.create({
+    /*chrome.notifications.create({
       type: "basic",
       title: "Notification",
       message: "Saving current image...",
       iconUrl: chrome.runtime.getURL('icon.png'),
-    })
+    })*/
   }
   else if(info.menuItemId === "Create folder"){
     chrome.tabs.sendMessage(tab.id, {type: 'createFolderFromContext', content: [info.srcUrl]});
-    chrome.notifications.create({
+   /* chrome.notifications.create({
       type: "basic",
       title: "Notification",
       message: "Creating folder...",
       iconUrl: chrome.runtime.getURL('icon.png'),
-    })
+    })*/
   }
   return true;
 });
