@@ -8,7 +8,7 @@ async function loadModels() {
 
   console.log("Modelli caricati con successo 2");
 }
-
+/*
 function areTheSameDescriptorsForContext(descriptors1, descriptors2){
   for(let i=0; i<descriptors1.length; i++){
     if(descriptors1[i] !== descriptors2[i]){
@@ -29,58 +29,55 @@ async function isInStorageForContext(valToAdd){
   }
   return false;
 }
-
+*/
 function startOverlay(src){
-  if(src !== "chrome-extension://agcajemoakhfgjfjbcbfbdlmjpemdpjb/icon.png"){
-    const imgElement = document.querySelector(`img[src="${src}"]`)
-    
-    const div1 = document.createElement('div');
-    div1.className = 'text-center';
-    div1.style.width = '100%';
-    div1.style.height = '100%';
-    div1.style.position = 'absolute';
-    div1.style.right = '0px';
-    div1.style.bottom = '0px';
-    div1.style.display = 'flex';
-    div1.style.alignItems = 'center';
-    div1.style.justifyContent = 'center';
-    div1.style.zIndex = 1;
-    div1.style.background = 'rgba(255,255,255,0.8)';
+  const imgElement = document.querySelector(`img[src="${src}"]`)
+  
+  const div1 = document.createElement('div');
+  div1.className = 'text-center';
+  div1.style.width = '100%';
+  div1.style.height = '100%';
+  div1.style.position = 'absolute';
+  div1.style.right = '0px';
+  div1.style.bottom = '0px';
+  div1.style.display = 'flex';
+  div1.style.alignItems = 'center';
+  div1.style.justifyContent = 'center';
+  div1.style.zIndex = 1;
+  div1.style.background = 'rgba(255,255,255,0.8)';
 
-    const div2 = document.createElement('div');
-    div2.className = 'spinner-border';
-    div2.role = 'status';
+  const div2 = document.createElement('div');
+  div2.className = 'spinner-border';
+  div2.role = 'status';
 
-    const span = document.createElement('span');
-    span.className = 'visually-hidden';
+  const span = document.createElement('span');
+  span.className = 'visually-hidden';
 
-    div2.appendChild(span);
-    div1.appendChild(div2);
+  div2.appendChild(span);
+  div1.appendChild(div2);
 
-    imgElement.parentElement.appendChild(div1);
-    console.log(imgElement)
-  }
+  imgElement.parentElement.appendChild(div1);
 }
 
 function stopOverlay(src, mode){
-  if(src !== "chrome-extension://agcajemoakhfgjfjbcbfbdlmjpemdpjb/icon.png"){
-    const imgElement = document.querySelector(`img[src="${src}"]`)
-    const div = imgElement.nextElementSibling;
-    div.childNodes[0].remove();
-    const checkImage = new Image();
-    checkImage.style.width = "60px";
-    checkImage.style.height = "60px";
-    if(mode === "Ok"){
-      checkImage.src = chrome.runtime.getURL('check.png');
-    }
-    else if(mode === "No"){
-      checkImage.src = chrome.runtime.getURL('cross.png');
-    }
-    div.appendChild(checkImage);
-    setTimeout(() => {
-      div.remove();
-    }, 3000);
+  const imgElement = document.querySelector(`img[src="${src}"]`)
+  const div = imgElement.parentNode.lastElementChild;
+  div.childNodes[0].childNodes[0].remove;
+  div.childNodes[0].removeAttribute('class')
+  div.childNodes[0].removeAttribute('role')
+  const checkImage = new Image();
+  checkImage.style.width = "60px";
+  checkImage.style.height = "60px";
+  if(mode === "Ok"){
+    checkImage.src = chrome.runtime.getURL('check.png');
   }
+  else if(mode === "No"){
+    checkImage.src = chrome.runtime.getURL('cross.png');
+  }
+  div.childNodes[0].appendChild(checkImage);
+  setTimeout(() => {
+    div.remove();
+  }, 3000);
 }
 
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
@@ -116,12 +113,12 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
               0, 0, img.width, img.height
             );
 
-            await isInStorageForContext(detection.descriptor).then(async(res) => {
-              if(!res){
+            //await isInStorageForContext(detection.descriptor).then(async(res) => {
+            //  if(!res){
                 canvases.push(canvas.toDataURL('image/jpeg'));
                 await chrome.storage.local.set({['imageOfFolder'+divId+canvas.toDataURL('image/jpeg')/*JSON.stringify(detection.descriptor)*/]: [canvas.toDataURL('image/jpeg'), JSON.stringify(detection.descriptor)]});
-              }
-            });
+            //  }
+            //});
             canvas.remove();
           }
         }
@@ -145,14 +142,14 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
             }
           });
         }
-        else{
+        /*else{
           chrome.runtime.sendMessage({type: 'existingImage', content: filename}, (response) => {
             if(response){
               console.log("Ok");
               stopOverlay(message.content[1], "No");
             }
           });
-        }
+        }*/
       })
     } catch (error) {
       console.error(error);

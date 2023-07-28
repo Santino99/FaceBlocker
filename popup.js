@@ -44,7 +44,7 @@ async function addImageToStorage(divId, image, filename){
     loadingDiv.setAttribute('hidden', 'hidden');
   });
 }
-
+/*
 function areTheSameDescriptors(descriptors1, descriptors2){
   for(let i=0; i<descriptors1.length; i++){
     if(descriptors1[i] !== descriptors2[i]){
@@ -64,7 +64,7 @@ async function isInStorage(valToAdd){
     }
   }
   return false;
-}
+}*/
 
 async function detectFaceForFolders(result, filename){
   let face;
@@ -153,12 +153,12 @@ async function detectFace(divId, result, filename){
             0, 0, img.width, img.height
           );
 
-          await isInStorage(detection.descriptor).then(async(res) => {
-            if(!res){
+          //await isInStorage(detection.descriptor).then(async(res) => {
+          //  if(!res){
               canvases.push(canvas.toDataURL('image/jpeg'));
               await chrome.storage.local.set({['imageOfFolder'+divId+canvas.toDataURL('image/jpeg')/*JSON.stringify(detection.descriptor)*/]: [canvas.toDataURL('image/jpeg'), JSON.stringify(detection.descriptor)]});
-            }
-          });
+          //  }
+          //});
           canvas.remove();
         }
       }
@@ -180,13 +180,13 @@ async function detectFace(divId, result, filename){
           }
         });
       }
-      else{
+      /*else{
         chrome.runtime.sendMessage({type: 'existingImage', content: filename}, (response) => {
           if(response){
             console.log("Ok");
           }
         });
-      }
+      }*/
     })
   } catch (error) {
     console.error(error);
