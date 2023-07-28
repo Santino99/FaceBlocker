@@ -47,8 +47,27 @@ function startOverlay(src){
   div1.style.background = 'rgba(255,255,255,0.8)';
 
   const div2 = document.createElement('div');
-  div2.className = 'spinner-border';
-  div2.role = 'status';
+  div2.className = 'custom-spinner';
+
+  const customCSS = `
+  .custom-spinner {
+    position: relative;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    animation: spin 2s linear infinite;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }`;
+
+  const styleElement = document.createElement('style');
+  styleElement.innerHTML = customCSS;
+  document.head.appendChild(styleElement);
 
   const span = document.createElement('span');
   span.className = 'visually-hidden';

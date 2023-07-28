@@ -117,7 +117,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
-  if(info.srcUrl !== "chrome-extension://agcajemoakhfgjfjbcbfbdlmjpemdpjb/icon.png"){
+  if(info.srcUrl !== "chrome-extension://agcajemoakhfgjfjbcbfbdlmjpemdpjb/icon.png" && tab.id !== -1){
     if(info.menuItemId.startsWith('folder')){
       chrome.tabs.sendMessage(tab.id, {type: 'saveImageFromContext', content: [info.menuItemId, info.srcUrl]});
       /*chrome.notifications.create({
