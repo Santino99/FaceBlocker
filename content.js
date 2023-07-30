@@ -194,17 +194,17 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
     });
     try {
       await imageLoadPromise.then(async (img) => {
-        const detections = await faceapi.detectAllFaces(img);
+        const detections = await faceapi.detectAllFaces(img).withFaceLandmarks().withFaceDescriptors();
         if(detections.length === 1){
           const canvas = document.createElement('canvas');
           const context = canvas.getContext('2d', {willReadFrequently: true});
           canvas.width = img.width;
           canvas.height = img.height;
           context.drawImage(img,
-            detections[0].box.x,
-            detections[0].box.y,
-            detections[0].box.width,
-            detections[0].box.height,
+            detections[0].detection.box.x,
+            detections[0].detection.box.y,
+            detections[0].detection.box.width,
+            detections[0].detection.box.height,
             0, 0, img.width, img.height
           );
           face = canvas.toDataURL('image/jpeg');
@@ -212,7 +212,9 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
           const inputValue = "Empty folder";
           const bTextContent = "On";
           const bClassName = "btn btn-success";
-          chrome.storage.local.set({["folder"+divId]: [face, inputValue, bTextContent, bClassName]});
+          await chrome.storage.local.set({["folder"+divId]: [face, inputValue, bTextContent, bClassName]})
+          await chrome.storage.local.set({['imageOfFolderfolder'+divId+face]: [face, JSON.stringify(detections[0].descriptor)]});
+          console.log("amici miei")
           canvas.remove();
         }
         else if(detections.length === 0){
@@ -266,6 +268,9 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
 });
 
 async function obscure(image) {
+  image.addEventListener('contextmenu', function(event){
+    event.preventDefault();
+  })
   image.src = chrome.runtime.getURL('icon.png');
   image.srcset = chrome.runtime.getURL('icon.png');
   image.parentNode.insertBefore(image, image.parentNode.firstChild);
@@ -292,7 +297,7 @@ async function startBlocking(all, image){
     });
     await imageLoadPromise.then(async (img) => {
       let detections;
-      if(model === 'tiny'){
+      if(model === 'tiny' || model === null){
         detections = await faceapi.detectAllFaces(img, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptors();
       }
       else if(model === 'bigger'){
@@ -315,46 +320,48 @@ async function startBlocking(all, image){
 
 chrome.runtime.sendMessage({type: 'getSavedImagesAndModel'}, (response) => {
   model = response[1];
-  loadModels().then(function(){
-    var intersectionObserver = new IntersectionObserver(function(entries, observer){
-      entries.forEach(entry => {
-        if(entry.isIntersecting){
-          startBlocking(response[0], entry.target).then(() => observer.unobserve(entry.target));
-        }
+  if(response[0].length !== 0){
+    loadModels().then(function(){
+      var intersectionObserver = new IntersectionObserver(function(entries, observer){
+        entries.forEach(entry => {
+          if(entry.isIntersecting){
+            startBlocking(response[0], entry.target).then(() => observer.unobserve(entry.target));
+          }
+        });
       });
-    });
-    
-    document.querySelectorAll('img').forEach((image) => {
-      intersectionObserver.observe(image);
-    });
-    
-    function handleMutations(mutationsList, observer) {
-      for (let mutation of mutationsList) {
-        if (mutation.type === 'childList') {
-          for (let node of mutation.addedNodes) {
-            if (node instanceof HTMLElement) {
-              if(node.tagName === 'IMG'){
-                intersectionObserver.observe(node)
-              }
-              else{
-                node.querySelectorAll('img').forEach((image) => {
-                  image.onload = function(){
-                    intersectionObserver.observe(image)
-                  }
-                });
+      
+      document.querySelectorAll('img').forEach((image) => {
+        intersectionObserver.observe(image);
+      });
+      
+      function handleMutations(mutationsList, observer) {
+        for (let mutation of mutationsList) {
+          if (mutation.type === 'childList') {
+            for (let node of mutation.addedNodes) {
+              if (node instanceof HTMLElement) {
+                if(node.tagName === 'IMG'){
+                  intersectionObserver.observe(node)
+                }
+                else{
+                  node.querySelectorAll('img').forEach((image) => {
+                    image.onload = function(){
+                      intersectionObserver.observe(image)
+                    }
+                  });
+                }
               }
             }
           }
         }
       }
-    }
-    const observer = new MutationObserver(handleMutations);
+      const observer = new MutationObserver(handleMutations);
 
-    const targetNode = document.body;
-    const config = {childList: true, subtree: true};
+      const targetNode = document.body;
+      const config = {childList: true, subtree: true};
 
-    observer.observe(targetNode, config);
-  });
+      observer.observe(targetNode, config);
+    });
+  }
 });
 
 

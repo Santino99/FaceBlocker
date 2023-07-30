@@ -508,6 +508,9 @@ async function constructCardFolder(divId, imgSrc, inputValue, bTextContent, bCla
     divImages.removeAttribute('hidden')
   })  
 
+  img.addEventListener('contextmenu', function(event){
+    event.preventDefault();
+  })
   const div2 = document.createElement('div');
   div2.className = "card-body";
 
@@ -672,6 +675,10 @@ function constructDivImage(divId, photo){
     this.style.opacity = 1;
   }
 
+  img.addEventListener('contextmenu', function(event){
+    event.preventDefault();
+  })
+  
   container.appendChild(img);
   a.appendChild(icon);
   x_div.appendChild(a);
