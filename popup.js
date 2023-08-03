@@ -2,6 +2,7 @@ const noFolder = document.getElementById('noFolder');
 const noImages = document.getElementById('noImages');
 const tinyModelButton = document.getElementById('tiny-model');
 const biggerModelButton = document.getElementById('bigger-model'); 
+const autoModelButton = document.getElementById('auto-model'); 
 const onButton = document.getElementById('on-button');
 const offButton = document.getElementById('off-button'); 
 const loadingDiv = document.getElementById('loading');
@@ -226,12 +227,19 @@ async function setModels(){
   }
   else if(Object.values(model)[0] === "tiny"){
     biggerModelButton.classList.remove('active');
+    autoModelButton.classList.remove('active');
     tinyModelButton.classList.add('active')
 
   }
   else if(Object.values(model)[0] === "bigger"){
     tinyModelButton.classList.remove('active');
+    autoModelButton.classList.remove('active');
     biggerModelButton.classList.add('active')
+  }
+  else if(Object.values(model)[0] === "auto"){
+    tinyModelButton.classList.remove('active');
+    biggerModelButton.classList.remove('active')
+    autoModelButton.classList.add('active');
   }
 }
 
@@ -242,13 +250,11 @@ function updateButtonCardFolder(key, mode){
     button.classList.remove("btn-danger");
     button.classList.add("btn-success");
     button.innerText = mode;
-    console.log(button)
   }
   else if(mode === "Off"){
     button.classList.add("btn-danger");
     button.classList.remove("btn-success");
     button.innerText = mode;
-    console.log(button)
   }
 }
 
@@ -361,18 +367,29 @@ document.addEventListener('DOMContentLoaded', function() {
   uploadFaceFolder.addEventListener('click', click);
 
   tinyModelButton.addEventListener('click', () => {
-    if(biggerModelButton.classList.contains('active')){
+    if(biggerModelButton.classList.contains('active') || (autoModelButton.classList.contains('active'))){
       biggerModelButton.classList.remove('active');
+      autoModelButton.classList.remove('active');
       tinyModelButton.classList.add('active')
       chrome.storage.local.set({"activeModel": 'tiny'})
     }
   });
 
   biggerModelButton.addEventListener('click', () => {
-    if(tinyModelButton.classList.contains('active')){
+    if(tinyModelButton.classList.contains('active') || (autoModelButton.classList.contains('active'))){
       tinyModelButton.classList.remove('active');
+      autoModelButton.classList.remove('active');
       biggerModelButton.classList.add('active')
       chrome.storage.local.set({"activeModel": 'bigger'})
+    }
+  });
+
+  autoModelButton.addEventListener('click', () => {
+    if(tinyModelButton.classList.contains('active') || (biggerModelButton.classList.contains('active'))){
+      tinyModelButton.classList.remove('active');
+      biggerModelButton.classList.remove('active');
+      autoModelButton.classList.add('active')
+      chrome.storage.local.set({"activeModel": 'auto'})
     }
   });
 
