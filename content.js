@@ -32,11 +32,12 @@ async function isInStorageForContext(valToAdd){
 function startOverlay(src){
   const urlObject = new URL(src);
   const realSrc = urlObject.pathname + urlObject.search + urlObject.hash;
-  let imgElement = document.querySelector(`img[src="${realSrc}"]`);
+  let imgElement = document.querySelector(`img[src*="${realSrc}"]`);
   if(imgElement === null){
     imgElement = document.querySelector(`img[src="${src}"]`);
   }
 
+  console.log(imgElement)
   const div1 = document.createElement('div');
   div1.className = 'text-center';
   div1.style.width = '100%';
@@ -85,7 +86,7 @@ function startOverlay(src){
 function stopOverlay(src, mode){
   const urlObject = new URL(src);
   const realSrc = urlObject.pathname + urlObject.search + urlObject.hash;
-  let imgElement = document.querySelector(`img[src="${realSrc}"]`);
+  let imgElement = document.querySelector(`img[src*="${realSrc}"]`);
   if(imgElement === null){
     imgElement = document.querySelector(`img[src="${src}"]`);
   }
