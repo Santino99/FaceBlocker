@@ -30,8 +30,13 @@ async function isInStorageForContext(valToAdd){
 }
 */
 function startOverlay(src){
-  const imgElement = document.querySelector(`img[src="${src}"]`)
-  
+  const urlObject = new URL(src);
+  const realSrc = urlObject.pathname + urlObject.search + urlObject.hash;
+  let imgElement = document.querySelector(`img[src="${realSrc}"]`);
+  if(imgElement === null){
+    imgElement = document.querySelector(`img[src="${src}"]`);
+  }
+
   const div1 = document.createElement('div');
   div1.className = 'text-center';
   div1.style.width = '100%';
@@ -78,12 +83,20 @@ function startOverlay(src){
 }
 
 function stopOverlay(src, mode){
-  const imgElement = document.querySelector(`img[src="${src}"]`)
+  const urlObject = new URL(src);
+  const realSrc = urlObject.pathname + urlObject.search + urlObject.hash;
+  let imgElement = document.querySelector(`img[src="${realSrc}"]`);
+  if(imgElement === null){
+    imgElement = document.querySelector(`img[src="${src}"]`);
+  }
   const div = imgElement.parentNode.lastElementChild;
   div.childNodes[0].childNodes[0].remove;
   div.childNodes[0].removeAttribute('class')
   div.childNodes[0].removeAttribute('role')
   const checkImage = new Image();
+  checkImage.addEventListener('contextmenu', (event) => {
+    event.preventDefault();
+  })
   checkImage.style.width = "60px";
   checkImage.style.height = "60px";
   if(mode === "Ok"){
@@ -321,6 +334,33 @@ chrome.runtime.sendMessage({type: 'getSavedImagesAndModel'}, (response) => {
   const savedImages = response[0];
 
   icon = chrome.runtime.getURL('icon.png');
+
+  document.addEventListener("mousedown", (event) => {
+    if(event.button === 2) {
+      if(event.target.tagName === 'IMG'){
+        if(event.target.src !== icon){
+          chrome.runtime.sendMessage({type: 'showContextMenu', content: event.target.src});
+        }
+      }
+      else{
+        parent = event.target.parentElement;
+        image = parent.querySelector('img');
+        if(image && image.src !== icon){
+          chrome.runtime.sendMessage({type: 'showContextMenu', content: image.src});
+        }
+        else{
+          parent2 = parent.parentElement;
+          image2 = parent2.querySelector('img');
+          if(image2 && image2.src !== icon){
+            chrome.runtime.sendMessage({type: 'showContextMenu', content: image2.src});
+          }
+          else{
+            chrome.runtime.sendMessage({type: 'hideContextMenu'});
+          }
+        }
+      }
+    }
+  });
 
   intersections = {}
 

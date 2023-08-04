@@ -1,4 +1,5 @@
-// VEDERE PER IL FATTO DEL ICON BACKWARDS
+let lastSrcImageClicked;
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if(message.type === 'getSavedImagesAndModel'){
     let divs = [];
@@ -114,28 +115,35 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
     }).then(sendResponse(true));
   }
+  else if(message.type === 'showContextMenu'){
+    chrome.contextMenus.update("Create folder", { visible: true });
+    chrome.contextMenus.update("Take image", { visible: true });
+    lastSrcImageClicked = message.content;
+  }
+  else if(message.type === 'hideContextMenu'){
+    chrome.contextMenus.update("Create folder", { visible: false });
+    chrome.contextMenus.update("Take image", { visible: false });
+  }
 });
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
-  if(info.srcUrl !== "chrome-extension://agcajemoakhfgjfjbcbfbdlmjpemdpjb/icon.png" && tab.id !== -1){
-    if(info.menuItemId.startsWith('folder')){
-      chrome.tabs.sendMessage(tab.id, {type: 'saveImageFromContext', content: [info.menuItemId, info.srcUrl]});
-      /*chrome.notifications.create({
-        type: "basic",
-        title: "Notification",
-        message: "Saving current image...",
-        iconUrl: chrome.runtime.getURL('icon.png'),
-      })*/
-    }
-    else if(info.menuItemId === "Create folder"){
-      chrome.tabs.sendMessage(tab.id, {type: 'createFolderFromContext', content: [info.srcUrl]});
-    /* chrome.notifications.create({
-        type: "basic",
-        title: "Notification",
-        message: "Creating folder...",
-        iconUrl: chrome.runtime.getURL('icon.png'),
-      })*/
-    }
+  if(info.menuItemId.startsWith('folder')){
+    chrome.tabs.sendMessage(tab.id, {type: 'saveImageFromContext', content: [info.menuItemId, lastSrcImageClicked]});
+    /*chrome.notifications.create({
+      type: "basic",
+      title: "Notification",
+      message: "Saving current image...",
+      iconUrl: chrome.runtime.getURL('icon.png'),
+    })*/
+  }
+  else if(info.menuItemId === "Create folder"){
+    chrome.tabs.sendMessage(tab.id, {type: 'createFolderFromContext', content: [lastSrcImageClicked]});
+  /* chrome.notifications.create({
+      type: "basic",
+      title: "Notification",
+      message: "Creating folder...",
+      iconUrl: chrome.runtime.getURL('icon.png'),
+    })*/
   }
   return true;
 });
@@ -186,13 +194,15 @@ chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
     id: 'Create folder',
     title: "Create folder with this image",
-    contexts: ['image'],
+    contexts: ['all'],
+    visible: false
   });
 
   chrome.contextMenus.create({
     id: 'Take image',
     title: "Import image in",
-    contexts: ['image'],
+    contexts: ['all'],
+    visible: false
   });
 
   chrome.storage.local.get().then((all) => {
@@ -202,14 +212,12 @@ chrome.runtime.onInstalled.addListener(() => {
           id: key,
           title: val[1],
           parentId: 'Take image',
-          contexts: ['image'],
+          contexts: ['all'],
         });
       }
     }
-  }).then(() => {return true;})   
+  }).then(() => {return true;})
 });
-
-
 
  /*chrome.storage.local.clear(function() {
           console.log('Tutti i dati sono stati eliminati correttamente.');
