@@ -1,42 +1,5 @@
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if(message.type === 'getSavedImagesAndModel'){
-    let divs = [];
-    let images = [];
-    let model;
-    chrome.storage.local.get().then((all) => {
-      for (const [key, val] of Object.entries(all)){
-        if(key.startsWith('activeModel')){
-          model = val;
-        }
-        if(key.startsWith('folder')){
-          if(val[2] === "On"){
-            divs.push(key);
-          }
-        }
-      }
-      for (const [key, val] of Object.entries(all)){
-        for (const div of divs){
-          if(key.startsWith('imageOfFolder'+div)){
-            images.push(val[1]);
-          }
-        }
-      }
-      return [images, model];
-    }).then(sendResponse);
-
-    return true;
-  }
-  else if(message.type === 'existingImage'){
-    chrome.notifications.create({
-      type: "basic",
-      title: "Notification",
-      message: "Image " + message.content + " already present",
-      iconUrl: chrome.runtime.getURL('icon.png'),
-    });
-    sendResponse(true);
-    
-  }
-  else if(message.type === 'addedImage'){
+  if(message.type === 'addedImage'){
     chrome.notifications.create({
       type: "basic",
       title: "Notification",
@@ -112,9 +75,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }
       }
     }).then(sendResponse(true));
-  }
-  else if(message.type === 'showContextMenu'){
-
   }
 });
 

@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "FaceBlocker",
   "version": "1.0",
-  "description": "Estensione per bloccare le pubblicità contenenti personaggi indesiderati",
+  "description": "Estensione per bloccare i contenuti con personaggi indesiderati",
   "icons": {
     "16": "icon.png",
     "48": "icon.png",
@@ -15,8 +15,7 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "node_modules/@vladmandic/face-api/model/*", 
-        "modeljs/*",
+        "node_modules/@vladmandic/face-api/model/*",
         "icon.png",
         "check.png",
         "cross.png"

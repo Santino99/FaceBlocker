@@ -9,30 +9,10 @@ async function loadModels() {
   console.log("Modelli caricati con successo 2");
   loaded = true;
 }
-/*
-function areTheSameDescriptorsForContext(descriptors1, descriptors2){
-  for(let i=0; i<descriptors1.length; i++){
-    if(descriptors1[i] !== descriptors2[i]){
-      return false;
-    }
-  }
-  return true;
-}
 
-async function isInStorageForContext(valToAdd){
-  const all = await chrome.storage.local.get();
-  for (const [key, val] of Object.entries(all)){
-    if(key.startsWith('imageOfFolder')){
-      if(areTheSameDescriptorsForContext(valToAdd, new Float32Array(Object.values(JSON.parse(val[1]))))){
-        return true;
-      }
-    }
-  }
-  return false;
-}
-*/
 function startOverlay(){
   const div1 = document.createElement('div');
+  div1.id = "divLoadingFaceblocker";
   div1.className = 'text-center';
   div1.style.width = window.innerWidth + "px";
   div1.style.height = window.innerHeight + "px";
@@ -77,7 +57,7 @@ function startOverlay(){
 }
 
 function stopOverlay(mode){
-  const div = document.body.lastElementChild;
+  const div = document.getElementById("divLoadingFaceblocker");
   console.log(div);
   div.childNodes[0].childNodes[0].remove;
   div.childNodes[0].removeAttribute('class')
@@ -135,12 +115,8 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
                 0, 0, img.width, img.height
               );
 
-              //await isInStorageForContext(detection.descriptor).then(async(res) => {
-              //  if(!res){
-                  canvases.push(canvas.toDataURL('image/jpeg'));
-                  await chrome.storage.local.set({['imageOfFolder'+divId+canvas.toDataURL('image/jpeg')/*JSON.stringify(detection.descriptor)*/]: [canvas.toDataURL('image/jpeg'), JSON.stringify(detection.descriptor)]});
-              //  }
-              //});
+              canvases.push(canvas.toDataURL('image/jpeg'));
+              await chrome.storage.local.set({['imageOfFolder'+divId+canvas.toDataURL('image/jpeg')]: [canvas.toDataURL('image/jpeg'), JSON.stringify(detection.descriptor)]});
               canvas.remove();
             }
           }
@@ -164,14 +140,6 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
               }
             });
           }
-          /*else{
-            chrome.runtime.sendMessage({type: 'existingImage', content: filename}, (response) => {
-              if(response){
-                console.log("Ok");
-                stopOverlay(message.content[1], "No");
-              }
-            });
-          }*/
         })
       } catch (error) {
         console.error(error);
@@ -321,14 +289,32 @@ async function startBlocking(all, image, mode){
   }
 };
 
-chrome.runtime.sendMessage({type: 'getSavedImagesAndModel'}, (response) => {
-  const model = response[1];
-  const savedImages = response[0];
+chrome.storage.local.get().then((all) => {
+  let divs = [];
+  let model;
+  let savedImages = [];
 
   icon = chrome.runtime.getURL('icon.png');
 
-  intersections = {}
+  let intersections = {}
 
+  for (const [key, val] of Object.entries(all)){
+    if(key.startsWith('activeModel')){
+      model = val;
+    }
+    if(key.startsWith('folder')){
+      if(val[2] === "On"){
+        divs.push(key);
+      }
+    }
+  }
+  for (const [key, val] of Object.entries(all)){
+    for (const div of divs){
+      if(key.startsWith('imageOfFolder'+div)){
+        savedImages.push(val[1]);
+      }
+    }
+  }
   loadModels().then(function(){
     const intersectionObserver = new IntersectionObserver(function(entries, observer){
       entries.forEach(entry => {
