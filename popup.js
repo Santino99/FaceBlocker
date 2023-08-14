@@ -35,32 +35,6 @@ async function thereIsImages(divId){
   return false;
 }
 
-async function addImageToStorage(divId, image, filename){
-  await detectFace(image, filename).then(async (response) => {
-    for(let i=0; i<response[0].length; i++){
-      isInStorage('imageOfFolder'+divId+response[0][i]).then((result) => {
-        if(!result){
-          chrome.storage.local.set({['imageOfFolder'+divId+response[0][i]]: [response[0][i], JSON.stringify(response[1][i])]}).then(() => {
-            constructDivImage(divId, response[0][i]);
-          });
-        }
-      })
-    }
-  }).then(() => {
-    loadingDiv.setAttribute('hidden', 'hidden');
-  });
-}
-
-async function isInStorage(keyToAdd){
-  all = await chrome.storage.local.get();
-  for (const [key, val] of Object.entries(all)){
-    if(key === keyToAdd){
-      return true;
-    }
-  }
-  return false;
-}
-
 async function detectFaceForFolders(result, filename){
   let face;
   let descriptor;
@@ -122,7 +96,7 @@ async function detectFaceForFolders(result, filename){
 }
 
 async function detectFace(result, filename){
-  let canvases = [];
+  let faces = [];
   let descriptors = [];
   let noDetection = false;
 
@@ -149,7 +123,7 @@ async function detectFace(result, filename){
             detection.detection.box.height,
             0, 0, img.width, img.height
           );
-          canvases.push(canvas.toDataURL('image/jpeg'));
+          faces.push(canvas.toDataURL('image/jpeg'));
           descriptors.push(detection.descriptor);
           canvas.remove();
         }
@@ -158,7 +132,7 @@ async function detectFace(result, filename){
         noDetection = true;
       }
     }).then(() => {
-      if(canvases.length !== 0 && !noDetection){
+      if(faces.length !== 0 && !noDetection){
         chrome.runtime.sendMessage({type: 'addedImage', content: filename}, (response) => {
           if(response){
             console.log("Ok");
@@ -177,7 +151,7 @@ async function detectFace(result, filename){
     console.error(error);
   }  
 
-  return [canvases, descriptors];
+  return [faces, descriptors];
 }
 
 async function getFolders(){
@@ -229,7 +203,7 @@ async function setModels(){
 
 function updateButtonCardFolder(key, mode){
   div = document.getElementById(key);
-  button = div.childNodes[1].childNodes[2];
+  let button = div.childNodes[1].childNodes[2];
   if(mode === "On"){
     button.classList.remove("btn-danger");
     button.classList.add("btn-success");
@@ -243,7 +217,19 @@ function updateButtonCardFolder(key, mode){
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+  loadingDiv.removeAttribute('hidden');
   setModels();
+  thereIsFolders().then((response) => {
+    if(response){
+      noFolder.setAttribute('hidden','hidden');
+      loadingDiv.setAttribute('hidden','hidden');
+    }
+    else{
+      noFolder.removeAttribute('hidden');
+      loadingDiv.setAttribute('hidden','hidden');
+    }
+  })
+  getFolders();
 
   const dropZoneFolders = document.getElementById('drop-zone-folders');
   const chooseFaceFolder= document.getElementById('choose-face-folder');
@@ -257,56 +243,16 @@ document.addEventListener('DOMContentLoaded', function() {
     event.preventDefault();
     dropZoneFolders.classList.remove('dragover');
     const files = event.dataTransfer.files;
+    const promises = [];
+    loadingDiv.removeAttribute('hidden');
     for (const file of files) {
-      loadingDiv.removeAttribute('hidden');
       const reader = new FileReader();
       reader.readAsDataURL(file);
-      reader.onload = () => {
-        detectFaceForFolders(reader.result, file.name).then((response) => {
-          if(response[0] !== undefined){
-            const divId = new Date().getTime();
-            const imgSrc = response[0];
-            const inputValue = "Empty folder";
-            const bTextContent = "On";
-            const bClassName = "btn btn-success";
-            constructCardFolder("folder"+divId, imgSrc, inputValue, bTextContent, bClassName).then(async () => {
-              await chrome.storage.local.set({["folder"+divId]: [imgSrc, inputValue, bTextContent, bClassName]});
-              await chrome.storage.local.set({['imageOfFolderfolder'+divId+response[0]]: [response[0], JSON.stringify(response[1])]});
-            });
-            chrome.runtime.sendMessage({type: 'addedFolderForContext', content: 'folder'+divId}, (response) => {
-              if(response === true){
-                chrome.runtime.sendMessage({type: 'addedFolderFromContext'}, (response) => {
-                  if(response === true){
-                    console.log("Cartella aggiunta");
-                    noFolder.setAttribute('hidden','hidden');
-                  }
-                  else{
-                    console.log("Errore nell'aggiunta della cartella");
-                  }
-                });
-              }
-              else{
-                console.log("Errore nell'aggiunta della cartella");
-              }
-            });
-          }
-        }).then(() => {
-          loadingDiv.setAttribute('hidden','hidden');
-        });
-      }
-    }
-  };
-
-  change = function(){
-    const files = chooseFaceFolder.files;
-    if(files.length > 0){
-      for (const file of files) {
-        loadingDiv.removeAttribute('hidden');
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
+      const promise = new Promise((resolve) => {
         reader.onload = () => {
           detectFaceForFolders(reader.result, file.name).then((response) => {
             if(response[0] !== undefined){
+              noFolder.setAttribute('hidden','hidden');
               const divId = new Date().getTime();
               const imgSrc = response[0];
               const inputValue = "Empty folder";
@@ -321,26 +267,75 @@ document.addEventListener('DOMContentLoaded', function() {
                   chrome.runtime.sendMessage({type: 'addedFolderFromContext'}, (response) => {
                     if(response === true){
                       console.log("Cartella aggiunta");
-                      loadingDiv.setAttribute('hidden','hidden');
-                      noFolder.setAttribute('hidden','hidden');
                     }
                     else{
-                      loadingDiv.setAttribute('hidden','hidden');
                       console.log("Errore nell'aggiunta della cartella");
                     }
                   });
                 }
                 else{
-                  loadingDiv.setAttribute('hidden','hidden');
                   console.log("Errore nell'aggiunta della cartella");
                 }
               });
             }
-          }).then(() => {
-            loadingDiv.setAttribute('hidden','hidden');
-          });;
+            resolve();
+          });
         }
+      });
+      promises.push(promise);
+    }
+    Promise.all(promises).then(() => {
+      loadingDiv.setAttribute('hidden', 'hidden');
+    });
+  };
+
+  change = function(){
+    const files = chooseFaceFolder.files;
+    if(files.length > 0){
+      const promises = [];
+      loadingDiv.removeAttribute('hidden');
+      for (const file of files) {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        const promise = new Promise((resolve) => {
+          reader.onload = () => {
+            detectFaceForFolders(reader.result, file.name).then((response) => {
+              if(response[0] !== undefined){
+                noFolder.setAttribute('hidden','hidden');
+                const divId = new Date().getTime();
+                const imgSrc = response[0];
+                const inputValue = "Empty folder";
+                const bTextContent = "On";
+                const bClassName = "btn btn-success";
+                constructCardFolder("folder"+divId, imgSrc, inputValue, bTextContent, bClassName).then(async () => {
+                  await chrome.storage.local.set({["folder"+divId]: [imgSrc, inputValue, bTextContent, bClassName]});
+                  await chrome.storage.local.set({['imageOfFolderfolder'+divId+response[0]]: [response[0], JSON.stringify(response[1])]});
+                });
+                chrome.runtime.sendMessage({type: 'addedFolderForContext', content: 'folder'+divId}, (response) => {
+                  if(response === true){
+                    chrome.runtime.sendMessage({type: 'addedFolderFromContext'}, (response) => {
+                      if(response === true){
+                        console.log("Cartella aggiunta");
+                      }
+                      else{
+                        console.log("Errore nell'aggiunta della cartella");
+                      }
+                    });
+                  }
+                  else{
+                    console.log("Errore nell'aggiunta della cartella");
+                  }
+                });
+              }
+              resolve();
+            })
+          }
+        })
+        promises.push(promise);
       }
+      Promise.all(promises).then(() => {
+        loadingDiv.setAttribute('hidden', 'hidden');
+      });
     }
   };
 
@@ -403,17 +398,17 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     })
   });
-
-  thereIsFolders().then((response) => {
-    if(response){
-      noFolder.setAttribute('hidden','hidden')
-    }
-    else{
-      noFolder.removeAttribute('hidden')
-    }
-  })
-  getFolders();
 });
+
+async function isInStorage(keyToAdd){
+  all = await chrome.storage.local.get();
+  for (const [key, val] of Object.entries(all)){
+    if(key === keyToAdd){
+      return true;
+    }
+  }
+  return false;
+}
 
 async function initializeDropAreaListeners(divId){
   const buttonBack = document.getElementById('back')
@@ -425,33 +420,57 @@ async function initializeDropAreaListeners(divId){
     event.preventDefault();
   };
 
-  drop = function(event){
+  function processFileAsync(file) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        detectFace(reader.result, file.name).then((response) => {
+          for(let i=0; i<response[0].length; i++){
+            console.log(response[0])
+            isInStorage('imageOfFolder'+divId+response[0][i]).then((result) => {
+              if(!result){
+                noImages.setAttribute('hidden','hidden');
+                console.log(file.name)
+                chrome.storage.local.set({['imageOfFolder'+divId+response[0][i]]: [response[0][i], JSON.stringify(response[1][i])]}).then(() => {
+                  constructDivImage(divId, response[0][i]);
+                });
+              }
+              resolve();
+            })
+          }
+        });
+      }
+    });
+  }
+
+  drop = async function(event){
     event.preventDefault();
     dropZone.classList.remove('dragover');
     const files = event.dataTransfer.files;
     loadingDiv.removeAttribute('hidden');
+    const promises = [];
     for (const file of files) {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => {
-        noImages.setAttribute('hidden','hidden');
-        addImageToStorage(divId, reader.result, file.name);
-      }
+      let promise = await processFileAsync(file);
+      promises.push(promise);
     }
+    Promise.all(promises).then(() => {
+      loadingDiv.setAttribute('hidden', 'hidden');
+    });
   };
 
-  change = function(){
+  change = async function(){
     const files = fileInput.files;
     if(files.length > 0){
       loadingDiv.removeAttribute('hidden');
+      const promises = [];
       for (const file of files) {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => {
-          noImages.setAttribute('hidden','hidden');
-          addImageToStorage(divId, reader.result, file.name);
-        }
+        let promise = await processFileAsync(file);
+        promises.push(promise);
       }
+      Promise.all(promises).then(() => {
+        loadingDiv.setAttribute('hidden', 'hidden');
+      });
     }
   };
 
@@ -496,13 +515,16 @@ async function constructCardFolder(divId, imgSrc, inputValue, bTextContent, bCla
   img.style.width = '150px';
   img.style.height = '150px';
   img.addEventListener('click', () => {
+    loadingDiv.removeAttribute('hidden');
     initializeDropAreaListeners(divId).then(()=>{
       thereIsImages(divId).then((response) => {
         if(response){
-          noImages.setAttribute('hidden','hidden')
+          noImages.setAttribute('hidden','hidden');
+          loadingDiv.setAttribute('hidden','hidden');
         }
         else{
-          noImages.removeAttribute('hidden')
+          noImages.removeAttribute('hidden');
+          loadingDiv.setAttribute('hidden','hidden');
         }
       })
       getImages(divId);
@@ -566,6 +588,8 @@ async function constructCardFolder(divId, imgSrc, inputValue, bTextContent, bCla
   button2.className = "btn btn-danger";
 
   button2.addEventListener('click', () => {
+    const i = button2.firstElementChild;
+    icon.className = "fas fa-circle-notch fa-spin";
     chrome.runtime.sendMessage({type: 'removedFolderForContext', content: divId}, (response) => {
       if(response === true){
         chrome.storage.local.get().then((all) => {
@@ -654,7 +678,7 @@ function constructDivImage(divId, photo){
     img.style.opacity = 0.3;
   }
   
-  a.onclick = function(){
+  a.addEventListener('click', () => {
     chrome.storage.local.remove('imageOfFolder'+divId+photo).then(()=>{
       thereIsImages(divId).then((response) => {
         if(response){
@@ -666,7 +690,7 @@ function constructDivImage(divId, photo){
       })
       preview.removeChild(container);
     });
-  }
+  }, {once: true});
 
   img.onmouseover = function(){
     a.style.opacity = 1;

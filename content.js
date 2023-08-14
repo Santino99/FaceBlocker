@@ -316,78 +316,80 @@ chrome.storage.local.get().then((all) => {
     }
   }
   loadModels().then(function(){
-    const intersectionObserver = new IntersectionObserver(function(entries, observer){
-      entries.forEach(entry => {
-        if(entry.isIntersecting){
-          if(model === 'auto'){
-            if(!intersections[entry.time]){
-              intersections[entry.time] = {entriesTimed: []};
-            }
-            intersections[entry.time].entriesTimed.push(entry)
-            
-            if(intersections[entry.time].timer) {
-              clearTimeout(intersections[entry.time].timer);
-            }      
+    if(savedImages.length > 0){
+      const intersectionObserver = new IntersectionObserver(function(entries, observer){
+        entries.forEach(entry => {
+          if(entry.isIntersecting){
+            if(model === 'auto'){
+              if(!intersections[entry.time]){
+                intersections[entry.time] = {entriesTimed: []};
+              }
+              intersections[entry.time].entriesTimed.push(entry)
+              
+              if(intersections[entry.time].timer) {
+                clearTimeout(intersections[entry.time].timer);
+              }      
 
-            intersections[entry.time].timer = setTimeout(() => {
-              if(intersections[entry.time].entriesTimed.length > 2){
-                console.log('tiny')
-                intersections[entry.time].entriesTimed.forEach((entry) => {
-                  startBlocking(savedImages, entry.target, 'tiny').then(() => {
-                    observer.unobserve(entry.target)
-                  });
-                })
-              }
-              else{
-                console.log('bigger')
-                intersections[entry.time].entriesTimed.forEach((entry) => {
-                  startBlocking(savedImages, entry.target, 'bigger').then(() => {
-                    observer.unobserve(entry.target)
-                  });
-                })
-              }
-              delete intersections[entry.time];
-            }, 100);
+              intersections[entry.time].timer = setTimeout(() => {
+                if(intersections[entry.time].entriesTimed.length > 2){
+                  console.log('tiny')
+                  intersections[entry.time].entriesTimed.forEach((entry) => {
+                    startBlocking(savedImages, entry.target, 'tiny').then(() => {
+                      observer.unobserve(entry.target)
+                    });
+                  })
+                }
+                else{
+                  console.log('bigger')
+                  intersections[entry.time].entriesTimed.forEach((entry) => {
+                    startBlocking(savedImages, entry.target, 'bigger').then(() => {
+                      observer.unobserve(entry.target)
+                    });
+                  })
+                }
+                delete intersections[entry.time];
+              }, 100);
+            }
+            else{
+              startBlocking(savedImages, entry.target, model).then(() => {
+                observer.unobserve(entry.target)
+              });
+            }
           }
-          else{
-            startBlocking(savedImages, entry.target, model).then(() => {
-              observer.unobserve(entry.target)
-            });
-          }
-        }
+        });
       });
-    });
-    
-    document.querySelectorAll('img').forEach((image) => {
-      intersectionObserver.observe(image);
-    });
-    
-    function handleMutations(mutationsList, observer) {
-      for (let mutation of mutationsList) {
-        if (mutation.type === 'childList') {
-          for (let node of mutation.addedNodes) {
-            if (node instanceof HTMLElement) {
-              if(node.tagName === 'IMG'){
-                intersectionObserver.observe(node)
-              }
-              else{
-                node.querySelectorAll('img').forEach((image) => {
-                  image.onload = function(){
-                    intersectionObserver.observe(image)
-                  }
-                });
+      
+      document.querySelectorAll('img').forEach((image) => {
+        intersectionObserver.observe(image);
+      });
+      
+      function handleMutations(mutationsList, observer) {
+        for (let mutation of mutationsList) {
+          if (mutation.type === 'childList') {
+            for (let node of mutation.addedNodes) {
+              if (node instanceof HTMLElement) {
+                if(node.tagName === 'IMG'){
+                  intersectionObserver.observe(node)
+                }
+                else{
+                  node.querySelectorAll('img').forEach((image) => {
+                    image.onload = function(){
+                      intersectionObserver.observe(image)
+                    }
+                  });
+                }
               }
             }
           }
         }
       }
+      const mutationObserver = new MutationObserver(handleMutations);
+
+      const targetNode = document.body;
+      const config = {childList: true, subtree: true};
+
+      mutationObserver.observe(targetNode, config);
     }
-    const mutationObserver = new MutationObserver(handleMutations);
-
-    const targetNode = document.body;
-    const config = {childList: true, subtree: true};
-
-    mutationObserver.observe(targetNode, config);
   });
 });
 
