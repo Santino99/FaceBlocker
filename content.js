@@ -86,6 +86,21 @@ function stopOverlay(mode){
   }, 3000);
 }
 
+async function isInStorage(keyToAdd){
+  try{
+    all = await chrome.storage.local.get();
+    for (const key of Object.keys(all)){
+      if(key === keyToAdd){
+        return true;
+      }
+    }
+    return false;
+  } catch (error) {
+    console.error(error);
+  }  
+}
+
+
 chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   if(loaded){
     if(message.type === 'saveImageFromContext'){
@@ -119,9 +134,28 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
                 detection.detection.box.height,
                 0, 0, img.width, img.height
               );
-
-              canvases.push(canvas.toDataURL('image/jpeg'));
-              await chrome.storage.local.set({['imageOfFolder'+divId+canvas.toDataURL('image/jpeg')]: [canvas.toDataURL('image/jpeg'), JSON.stringify(detection.descriptor)]});
+              let face = canvas.toDataURL('image/jpeg');
+              canvases.push(face);
+              isInStorage('imageOfFolder'+divId+face).then((result) => {
+                if(!result){
+                  chrome.storage.local.set({['imageOfFolder'+divId+face]: [JSON.stringify(detection.descriptor)]}).then(() => {
+                    chrome.runtime.sendMessage({type: 'addedImage', content: filename}, (response) => {
+                      if(response){
+                        console.log("Ok");
+                        stopOverlay("Ok");
+                      }
+                    });
+                  });
+                }
+                else{
+                  chrome.runtime.sendMessage({type: 'addedImage', content: filename}, (response) => {
+                    if(response){
+                      console.log("Ok");
+                      stopOverlay("Ok");
+                    }
+                  });
+                }
+              });
               canvas.remove();
             }
           }
@@ -129,15 +163,7 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
             noDetection = true;
           }
         }).then(() => {
-          if(canvases.length !== 0 && !noDetection){
-            chrome.runtime.sendMessage({type: 'addedImage', content: filename}, (response) => {
-              if(response){
-                console.log("Ok");
-                stopOverlay("Ok");
-              }
-            });
-          }
-          else if(noDetection){
+          if(noDetection){
             chrome.runtime.sendMessage({type: 'noDetection', content: filename}, (response) => {
               if(response){
                 console.log("Ok");
@@ -184,12 +210,12 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
               0, 0, img.width, img.height
             );
             face = canvas.toDataURL('image/jpeg');
-            divId = new Date().getTime();
+            divId = crypto.randomUUID();
             const inputValue = "Empty folder";
             const bTextContent = "On";
             const bClassName = "btn btn-success";
             await chrome.storage.local.set({["folder"+divId]: [face, inputValue, bTextContent, bClassName]})
-            await chrome.storage.local.set({['imageOfFolderfolder'+divId+face]: [face, JSON.stringify(detections[0].descriptor)]});
+            await chrome.storage.local.set({['imageOfFolderfolder'+divId+face]: [JSON.stringify(detections[0].descriptor)]});
             canvas.remove();
           }
           else if(detections.length === 0){

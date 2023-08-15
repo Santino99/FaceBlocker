@@ -177,9 +177,10 @@ async function getFolders(){
 async function getImages(divId){
   try{
     const all = await chrome.storage.local.get();
-    for (const [key, val] of Object.entries(all)){
+    for (const key of Object.keys(all)){
       if(key.startsWith('imageOfFolder'+divId)){
-        constructDivImage(divId, val[0]);
+        const face = key.slice(key.indexOf("data:image"));
+        constructDivImage(divId, face);
       }
     } 
     loadingDiv.setAttribute('hidden', 'hidden');
@@ -236,7 +237,10 @@ function updateButtonCardFolder(key, mode){
   }
 }
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
+  await chrome.storage.local.get().then(all => {
+    console.log(all);
+  })
   addLoadingDiv("Loading models...");
   loadModels().then(() => {
     setModels();
@@ -274,14 +278,14 @@ document.addEventListener('DOMContentLoaded', function() {
             detectFaceForFolders(reader.result, file.name).then((response) => {
               if(response[0] !== undefined){
                 noFolder.setAttribute('hidden','hidden');
-                const divId = new Date().getTime();
+                const divId = crypto.randomUUID();
                 const imgSrc = response[0];
                 const inputValue = "Empty folder";
                 const bTextContent = "On";
                 const bClassName = "btn btn-success";
                 chrome.storage.local.set({["folder"+divId]: [imgSrc, inputValue, bTextContent, bClassName]}).then(async() => {
                   try{
-                    await chrome.storage.local.set({['imageOfFolderfolder'+divId+response[0]]: [response[0], JSON.stringify(response[1])]});
+                    await chrome.storage.local.set({['imageOfFolderfolder'+divId+response[0]]: [JSON.stringify(response[1])]});
                     constructCardFolder("folder"+divId, imgSrc, inputValue, bTextContent, bClassName);
                     chrome.runtime.sendMessage({type: 'addedFolder'}, (response) => {
                       if(response === true){
@@ -328,14 +332,14 @@ document.addEventListener('DOMContentLoaded', function() {
               detectFaceForFolders(reader.result, file.name).then((response) => {
                 if(response[0] !== undefined){
                   noFolder.setAttribute('hidden','hidden');
-                  const divId = new Date().getTime();
+                  const divId = crypto.randomUUID();
                   const imgSrc = response[0];
                   const inputValue = "Empty folder";
                   const bTextContent = "On";
                   const bClassName = "btn btn-success";
                   chrome.storage.local.set({["folder"+divId]: [imgSrc, inputValue, bTextContent, bClassName]}).then(async() => {
                     try{
-                      await chrome.storage.local.set({['imageOfFolderfolder'+divId+response[0]]: [response[0], JSON.stringify(response[1])]});
+                      await chrome.storage.local.set({['imageOfFolderfolder'+divId+response[0]]: [JSON.stringify(response[1])]});
                       constructCardFolder("folder"+divId, imgSrc, inputValue, bTextContent, bClassName);
                       chrome.runtime.sendMessage({type: 'addedFolder'}, (response) => {
                         if(response === true){
@@ -473,13 +477,20 @@ async function initializeDropAreaListeners(divId){
               isInStorage('imageOfFolder'+divId+response[0][i]).then((result) => {
                 if(!result){
                   noImages.setAttribute('hidden','hidden');
-                  chrome.storage.local.set({['imageOfFolder'+divId+response[0][i]]: [response[0][i], JSON.stringify(response[1][i])]}).then(() => {
+                  chrome.storage.local.set({['imageOfFolder'+divId+response[0][i]]: [JSON.stringify(response[1][i])]}).then(() => {
                     constructDivImage(divId, response[0][i]);
                     chrome.runtime.sendMessage({type: 'addedImage', content: file.name}, (response) => {
                       if(response){
                         console.log("Ok");
                       }
                     });
+                  });
+                }
+                else{
+                  chrome.runtime.sendMessage({type: 'existingImage', content: file.name}, (response) => {
+                    if(response){
+                      console.log("Ok");
+                    }
                   });
                 }
                 resolve();
@@ -645,7 +656,6 @@ function constructCardFolder(divId, imgSrc, inputValue, bTextContent, bClassName
   button2.className = "btn btn-danger";
 
   button2.addEventListener('click', () => {
-    const i = button2.firstElementChild;
     icon.className = "fas fa-circle-notch fa-spin";
     chrome.runtime.sendMessage({type: 'removedFolderForContext', content: divId}, (response) => {
       if(response === true){

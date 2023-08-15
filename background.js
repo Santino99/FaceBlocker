@@ -8,6 +8,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     })
     sendResponse(true);
   }
+  else if(message.type === 'existingImage'){
+    chrome.notifications.create({
+      type: "basic",
+      title: "Notification",
+      message: "Image " + message.content + " is already present in this folder",
+      iconUrl: chrome.runtime.getURL('icon.png'),
+    })
+    sendResponse(true);
+  }
   else if(message.type === 'noDetection'){
     chrome.notifications.create({
       type: "basic",
