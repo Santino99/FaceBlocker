@@ -26,7 +26,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     })
     sendResponse(true);
   }
-  else if(message.type === 'addedFolderFromContext'){
+  else if(message.type === 'addedFolder'){
     chrome.notifications.create({
       type: "basic",
       title: "Notification",
@@ -69,7 +69,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
   else if(message.type === 'removedFolderForContext'){
     chrome.storage.local.get().then((all) => {
-      for(const [key,val] of Object.entries(all)){
+      for (const key of Object.keys(all)){
         if(key === message.content){
           chrome.contextMenus.remove(key);
         }

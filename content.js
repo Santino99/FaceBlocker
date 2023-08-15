@@ -2,12 +2,17 @@ let icon;
 let loaded = false;
 
 async function loadModels() {
-  await faceapi.nets.ssdMobilenetv1.loadFromUri(chrome.runtime.getURL('node_modules/@vladmandic/face-api/model'));
-  await faceapi.nets.tinyFaceDetector.loadFromUri(chrome.runtime.getURL('node_modules/@vladmandic/face-api/model'));
-  await faceapi.nets.faceLandmark68Net.loadFromUri(chrome.runtime.getURL('node_modules/@vladmandic/face-api/model'));
-  await faceapi.nets.faceRecognitionNet.loadFromUri(chrome.runtime.getURL('node_modules/@vladmandic/face-api/model'));
-  console.log("Modelli caricati con successo 2");
-  loaded = true;
+  try{
+    await Promise.all([
+      faceapi.nets.ssdMobilenetv1.loadFromUri(chrome.runtime.getURL('node_modules/@vladmandic/face-api/model')),
+      faceapi.nets.tinyFaceDetector.loadFromUri(chrome.runtime.getURL('node_modules/@vladmandic/face-api/model')),
+      faceapi.nets.faceLandmark68Net.loadFromUri(chrome.runtime.getURL('node_modules/@vladmandic/face-api/model')),
+      faceapi.nets.faceRecognitionNet.loadFromUri(chrome.runtime.getURL('node_modules/@vladmandic/face-api/model'))
+    ]);
+    loaded = true;
+  } catch (error) {
+    console.error(error);
+  }  
 }
 
 function startOverlay(){
@@ -215,7 +220,7 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
               if(response === true){
                 stopOverlay("Ok");
                 console.log("Cartella aggiunta");
-                chrome.runtime.sendMessage({type: 'addedFolderFromContext'}, (response) => {
+                chrome.runtime.sendMessage({type: 'addedFolder'}, (response) => {
                   if(response === true){
                     console.log("Ok");
                   }
@@ -284,7 +289,7 @@ async function startBlocking(all, image, mode){
               }
             }
         }
-      }
+      } 
     });
   }
 };
