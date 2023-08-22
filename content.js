@@ -2,17 +2,13 @@ let icon;
 let loaded = false;
 
 async function loadModels() {
-  try{
-    await Promise.all([
-      faceapi.nets.ssdMobilenetv1.loadFromUri(chrome.runtime.getURL('node_modules/@vladmandic/face-api/model')),
-      faceapi.nets.tinyFaceDetector.loadFromUri(chrome.runtime.getURL('node_modules/@vladmandic/face-api/model')),
-      faceapi.nets.faceLandmark68Net.loadFromUri(chrome.runtime.getURL('node_modules/@vladmandic/face-api/model')),
-      faceapi.nets.faceRecognitionNet.loadFromUri(chrome.runtime.getURL('node_modules/@vladmandic/face-api/model'))
-    ]);
-    loaded = true;
-  } catch (error) {
-    console.error(error);
-  }  
+  await Promise.all([
+    faceapi.nets.ssdMobilenetv1.loadFromUri(chrome.runtime.getURL('node_modules/@vladmandic/face-api/model')),
+    faceapi.nets.tinyFaceDetector.loadFromUri(chrome.runtime.getURL('node_modules/@vladmandic/face-api/model')),
+    faceapi.nets.faceLandmark68Net.loadFromUri(chrome.runtime.getURL('node_modules/@vladmandic/face-api/model')),
+    faceapi.nets.faceRecognitionNet.loadFromUri(chrome.runtime.getURL('node_modules/@vladmandic/face-api/model'))
+  ]);
+  loaded = true; 
 }
 
 function startOverlay(){
@@ -136,23 +132,10 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
               );
               let face = canvas.toDataURL('image/jpeg');
               canvases.push(face);
-              isInStorage('imageOfFolder'+divId+face).then((result) => {
+              isInStorage('imageOfFolder'+divId+face).then(async(result) => {
                 if(!result){
-                  chrome.storage.local.set({['imageOfFolder'+divId+face]: [JSON.stringify(detection.descriptor)]}).then(() => {
-                    chrome.runtime.sendMessage({type: 'addedImage', content: filename}, (response) => {
-                      if(response){
-                        stopOverlay("Ok");
-                      }
-                    });
-                  });
-                }
-                else{
-                  chrome.runtime.sendMessage({type: 'addedImage', content: filename}, (response) => {
-                    if(response){
-                      stopOverlay("Ok");
-                    }
-                  });
-                }
+                  await chrome.storage.local.set({['imageOfFolder'+divId+face]: [JSON.stringify(detection.descriptor)]});
+                }   
               });
               canvas.remove();
             }
@@ -161,7 +144,14 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
             noDetection = true;
           }
         }).then(() => {
-          if(noDetection){
+          if(canvases.length !== 0 && !noDetection){
+            chrome.runtime.sendMessage({type: 'addedImage', content: filename}, (response) => {
+              if(response){
+                stopOverlay("Ok");
+              }
+            });
+          }
+          else if(noDetection){
             chrome.runtime.sendMessage({type: 'noDetection', content: filename}, (response) => {
               if(response){
                 stopOverlay("No");
