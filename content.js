@@ -141,7 +141,6 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
                   chrome.storage.local.set({['imageOfFolder'+divId+face]: [JSON.stringify(detection.descriptor)]}).then(() => {
                     chrome.runtime.sendMessage({type: 'addedImage', content: filename}, (response) => {
                       if(response){
-                        console.log("Ok");
                         stopOverlay("Ok");
                       }
                     });
@@ -150,7 +149,6 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
                 else{
                   chrome.runtime.sendMessage({type: 'addedImage', content: filename}, (response) => {
                     if(response){
-                      console.log("Ok");
                       stopOverlay("Ok");
                     }
                   });
@@ -166,7 +164,6 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
           if(noDetection){
             chrome.runtime.sendMessage({type: 'noDetection', content: filename}, (response) => {
               if(response){
-                console.log("Ok");
                 stopOverlay("No");
               }
             });
@@ -211,7 +208,7 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
             );
             face = canvas.toDataURL('image/jpeg');
             divId = crypto.randomUUID();
-            const inputValue = "Empty folder";
+            const inputValue = "Untitled folder";
             const bTextContent = "On";
             const bClassName = "btn btn-success";
             await chrome.storage.local.set({["folder"+divId]: [face, inputValue, bTextContent, bClassName]})
@@ -228,7 +225,6 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
           if(noDetection){
             chrome.runtime.sendMessage({type: 'noDetection', content: filename}, (response) => {
               if(response){
-                console.log("No");
                 stopOverlay("No");
               }
             });
@@ -236,7 +232,6 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
           else if(moreDetections){
             chrome.runtime.sendMessage({type: 'moreDetections', content: filename}, (response) => {
               if(response){
-                console.log("No");
                 stopOverlay("No");
               }
             });
@@ -279,7 +274,7 @@ async function obscure(image) {
   image.removeAttribute('data-original');
 }
 
-async function startBlocking(all, image, mode){
+async function startBlocking(savedDescriptors, image, mode){
   if(image.src !== null){
     const imageLoadPromise = new Promise((resolve, reject) => {
         const img1 = new Image();
@@ -307,13 +302,13 @@ async function startBlocking(all, image, mode){
       }
       for(const detection of detections){
         if(detection){
-            for (const val of all){ 
-              descriptor2 = new Float32Array(Object.values(JSON.parse(val)));
-              const distance = await faceapi.euclideanDistance(detection.descriptor, descriptor2);
-              if(distance <= 0.6){
-                await obscure(image);
-              }
+          for (const val of savedDescriptors){ 
+            const savedDescriptor = new Float32Array(Object.values(JSON.parse(val)));
+            const distance = await faceapi.euclideanDistance(detection.descriptor, savedDescriptor);
+            if(distance <= 0.6){
+              await obscure(image);
             }
+          }
         }
       } 
     });
@@ -323,7 +318,7 @@ async function startBlocking(all, image, mode){
 chrome.storage.local.get().then((all) => {
   let divs = [];
   let model;
-  let savedImages = [];
+  let savedDescriptors = [];
 
   icon = chrome.runtime.getURL('icon.png');
 
@@ -342,12 +337,12 @@ chrome.storage.local.get().then((all) => {
   for (const [key, val] of Object.entries(all)){
     for (const div of divs){
       if(key.startsWith('imageOfFolder'+div)){
-        savedImages.push(val[1]);
+        savedDescriptors.push(val[0]);
       }
     }
   }
   loadModels().then(function(){
-    if(savedImages.length > 0){
+    if(savedDescriptors.length > 0){
       const intersectionObserver = new IntersectionObserver(function(entries, observer){
         entries.forEach(entry => {
           if(entry.isIntersecting){
@@ -365,7 +360,7 @@ chrome.storage.local.get().then((all) => {
                 if(intersections[entry.time].entriesTimed.length > 2){
                   console.log('tiny')
                   intersections[entry.time].entriesTimed.forEach((entry) => {
-                    startBlocking(savedImages, entry.target, 'tiny').then(() => {
+                    startBlocking(savedDescriptors, entry.target, 'tiny').then(() => {
                       observer.unobserve(entry.target)
                     });
                   })
@@ -373,7 +368,7 @@ chrome.storage.local.get().then((all) => {
                 else{
                   console.log('bigger')
                   intersections[entry.time].entriesTimed.forEach((entry) => {
-                    startBlocking(savedImages, entry.target, 'bigger').then(() => {
+                    startBlocking(savedDescriptors, entry.target, 'bigger').then(() => {
                       observer.unobserve(entry.target)
                     });
                   })
@@ -382,7 +377,7 @@ chrome.storage.local.get().then((all) => {
               }, 100);
             }
             else{
-              startBlocking(savedImages, entry.target, model).then(() => {
+              startBlocking(savedDescriptors, entry.target, model).then(() => {
                 observer.unobserve(entry.target)
               });
             }
@@ -394,7 +389,7 @@ chrome.storage.local.get().then((all) => {
         intersectionObserver.observe(image);
       });
       
-      function handleMutations(mutationsList, observer) {
+      const mutationObserver = new MutationObserver(function (mutationsList, observer) {
         for (let mutation of mutationsList) {
           if (mutation.type === 'childList') {
             for (let node of mutation.addedNodes) {
@@ -413,8 +408,7 @@ chrome.storage.local.get().then((all) => {
             }
           }
         }
-      }
-      const mutationObserver = new MutationObserver(handleMutations);
+      });
 
       const targetNode = document.body;
       const config = {childList: true, subtree: true};

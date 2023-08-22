@@ -122,7 +122,6 @@ async function detectFace(result, filename){
   try {
     await imageLoadPromise.then(async (img) => {
       const detections = await faceapi.detectAllFaces(img).withFaceLandmarks().withFaceDescriptors();
-      console.log(detections);
       if(detections.length > 0){
         for (const detection of detections){
           const canvas = document.createElement('canvas');
@@ -238,9 +237,6 @@ function updateButtonCardFolder(key, mode){
 }
 
 document.addEventListener('DOMContentLoaded', async function() {
-  await chrome.storage.local.get().then(all => {
-    console.log(all);
-  })
   addLoadingDiv("Loading models...");
   loadModels().then(() => {
     setModels();
@@ -280,7 +276,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 noFolder.setAttribute('hidden','hidden');
                 const divId = crypto.randomUUID();
                 const imgSrc = response[0];
-                const inputValue = "Empty folder";
+                const inputValue = "Untitled folder";
                 const bTextContent = "On";
                 const bClassName = "btn btn-success";
                 chrome.storage.local.set({["folder"+divId]: [imgSrc, inputValue, bTextContent, bClassName]}).then(async() => {
@@ -334,7 +330,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                   noFolder.setAttribute('hidden','hidden');
                   const divId = crypto.randomUUID();
                   const imgSrc = response[0];
-                  const inputValue = "Empty folder";
+                  const inputValue = "Untitled folder";
                   const bTextContent = "On";
                   const bClassName = "btn btn-success";
                   chrome.storage.local.set({["folder"+divId]: [imgSrc, inputValue, bTextContent, bClassName]}).then(async() => {

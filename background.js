@@ -1,3 +1,82 @@
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.declarativeNetRequest.updateDynamicRules({
+    addRules: [
+      {
+        id: 1,
+        priority: 1,
+        action: {
+          type: 'modifyHeaders',
+          responseHeaders: [
+            {
+              header: 'Access-Control-Allow-Origin',
+              operation: 'set',
+              value: '*'
+            }
+          ]
+        },
+        condition: {
+          urlFilter: "https://*/*",
+          resourceTypes: ['image']
+        }
+      },
+      {
+        id: 2,
+        priority: 1,
+        action: {
+          type: 'modifyHeaders',
+          responseHeaders: [
+            {
+              header: 'Access-Control-Allow-Origin',
+              operation: 'set',
+              value: '*'
+            }
+          ]
+        },
+        condition: {
+          urlFilter: "http://*/*",
+          resourceTypes: ['image']
+        }
+      },
+    ],
+    removeRuleIds: [1,2]
+  });
+
+  chrome.contextMenus.create({
+    id: 'Create folder',
+    title: "Create folder with this image",
+    contexts: ['image']
+  });
+
+  chrome.contextMenus.create({
+    id: 'Take image',
+    title: "Import image in",
+    contexts: ['image']
+  });
+
+  chrome.storage.local.get().then((all) => {
+    for(const [key,val] of Object.entries(all)){
+      if(key.startsWith('folder')){
+        chrome.contextMenus.create({
+          id: key,
+          title: val[1],
+          parentId: 'Take image',
+          contexts: ['image'],
+        });
+      }
+    }
+  }).then(() => {return true;})
+});
+
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  if(info.menuItemId.startsWith('folder')){
+    chrome.tabs.sendMessage(tab.id, {type: 'saveImageFromContext', content: [info.menuItemId, info.srcUrl]});
+  }
+  else if(info.menuItemId === "Create folder"){
+    chrome.tabs.sendMessage(tab.id, {type: 'createFolderFromContext', content: [info.srcUrl]});
+  }
+  return true;
+});
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if(message.type === 'addedImage'){
     chrome.notifications.create({
@@ -85,97 +164,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
     }).then(sendResponse(true));
   }
-});
-
-chrome.contextMenus.onClicked.addListener((info, tab) => {
-  if(info.menuItemId.startsWith('folder')){
-    chrome.tabs.sendMessage(tab.id, {type: 'saveImageFromContext', content: [info.menuItemId, info.srcUrl]});
-    /*chrome.notifications.create({
-      type: "basic",
-      title: "Notification",
-      message: "Saving current image...",
-      iconUrl: chrome.runtime.getURL('icon.png'),
-    })*/
-  }
-  else if(info.menuItemId === "Create folder"){
-    chrome.tabs.sendMessage(tab.id, {type: 'createFolderFromContext', content: [info.srcUrl]});
-  /* chrome.notifications.create({
-      type: "basic",
-      title: "Notification",
-      message: "Creating folder...",
-      iconUrl: chrome.runtime.getURL('icon.png'),
-    })*/
-  }
-  return true;
-});
-
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.declarativeNetRequest.updateDynamicRules({
-    addRules: [
-      {
-        id: 1,
-        priority: 1,
-        action: {
-          type: 'modifyHeaders',
-          responseHeaders: [
-            {
-              header: 'Access-Control-Allow-Origin',
-              operation: 'set',
-              value: '*'
-            }
-          ]
-        },
-        condition: {
-          urlFilter: "https://*/*",
-          resourceTypes: ['image']
-        }
-      },
-      {
-        id: 2,
-        priority: 1,
-        action: {
-          type: 'modifyHeaders',
-          responseHeaders: [
-            {
-              header: 'Access-Control-Allow-Origin',
-              operation: 'set',
-              value: '*'
-            }
-          ]
-        },
-        condition: {
-          urlFilter: "http://*/*",
-          resourceTypes: ['image']
-        }
-      },
-    ],
-    removeRuleIds: [1,2]
-  });
-
-  chrome.contextMenus.create({
-    id: 'Create folder',
-    title: "Create folder with this image",
-    contexts: ['image']
-  });
-
-  chrome.contextMenus.create({
-    id: 'Take image',
-    title: "Import image in",
-    contexts: ['image']
-  });
-
-  chrome.storage.local.get().then((all) => {
-    for(const [key,val] of Object.entries(all)){
-      if(key.startsWith('folder')){
-        chrome.contextMenus.create({
-          id: key,
-          title: val[1],
-          parentId: 'Take image',
-          contexts: ['image'],
-        });
-      }
-    }
-  }).then(() => {return true;})
 });
 
  /*chrome.storage.local.clear(function() {
