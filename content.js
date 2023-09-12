@@ -59,7 +59,6 @@ function startOverlay(){
 
 function stopOverlay(mode){
   const div = document.getElementById("divLoadingFaceblocker");
-  console.log(div);
   div.childNodes[0].childNodes[0].remove;
   div.childNodes[0].removeAttribute('class')
   div.childNodes[0].removeAttribute('role')
@@ -348,7 +347,6 @@ chrome.storage.local.get().then((all) => {
 
               intersections[entry.time].timer = setTimeout(() => {
                 if(intersections[entry.time].entriesTimed.length > 2){
-                  console.log('tiny')
                   intersections[entry.time].entriesTimed.forEach((entry) => {
                     startBlocking(savedDescriptors, entry.target, 'tiny').then(() => {
                       observer.unobserve(entry.target)
@@ -356,7 +354,6 @@ chrome.storage.local.get().then((all) => {
                   })
                 }
                 else{
-                  console.log('bigger')
                   intersections[entry.time].entriesTimed.forEach((entry) => {
                     startBlocking(savedDescriptors, entry.target, 'bigger').then(() => {
                       observer.unobserve(entry.target)

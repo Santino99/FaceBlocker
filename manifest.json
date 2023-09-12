@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "FaceBlocker",
-  "version": "1.0",
-  "description": "Estensione per bloccare i contenuti con personaggi indesiderati",
+  "version": "0.0.0.1",
+  "description": "Extension to block content with unwanted characters",
   "icons": {
     "16": "icon.png",
     "48": "icon.png",
@@ -48,7 +48,6 @@
   ],
   "permissions": [
     "storage",
-    "tabs",
     "activeTab",
     "contextMenus",
     "notifications",

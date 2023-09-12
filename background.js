@@ -165,21 +165,3 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }).then(sendResponse(true));
   }
 });
-
- /*chrome.storage.local.clear(function() {
-          console.log('Tutti i dati sono stati eliminati correttamente.');
-        });*/
-
-/*DistanceLayer.className = 'Lambda';
-    await faceapi.tf.serialization.registerClass(DistanceLayer);*/
-
-    /*class DistanceLayer extends faceapi.tf.layers.Layer {
-      constructor() {
-        super({});
-      }
-    
-      call(inputs) {
-        const [x1, x2] = inputs;
-        return faceapi.tf.abs(faceapi.tf.sub(x1, x2));
-      }
-  }*/
